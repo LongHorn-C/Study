@@ -1,12 +1,13 @@
 ﻿#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "ds.h"
 #include "G.h"
+#include "heap.h"
 #define INFINITE 0x7fffffff
-#define WHITE 0
-#define GRAY 1
-#define BLACK 2
+//#define WHITE 0
+//#define GRAY 1
+//#define BLACK 2
+enum Color {WHITE,GRAY,BLACK};
 
 G *newG(int n){
 	G *g =(G *)malloc(sizeof(G));
@@ -22,7 +23,7 @@ void assignVertex(G *g,int i,char *name){
 	strcpy(g->v[i].name,name);
 }
 
-void addEdge(G* g,int u,int v,int w){
+void addEdge(G* g,int u,int v,float w){
 	G_e *e=(G_e *)malloc(sizeof(G_e));
 	e->iBegin = u;
 	e->iEnd = v;
@@ -30,7 +31,7 @@ void addEdge(G* g,int u,int v,int w){
 	list_insert(g->v_adj[u],(PData)e);
 }
 
-void addEdge_NoDirection(G* g,int u,int v,int w){
+void addEdge_NoDirection(G* g,int u,int v,float w){
 	addEdge(g,u,v,w);
 	addEdge(g,v,u,w);
 }
@@ -46,8 +47,8 @@ void freeG(G *g){
 
 void BFS(G *g,int s,int *d,int *pi){
 	int i;
-	int *color;
-	color =(int *)malloc(sizeof(int)*g->n);
+	Color *color;
+	color =(Color *)malloc(sizeof(Color)*g->n);
 	for (i=0;i< g->n;i++){
 		color[i] =0;
 		d[i] = INFINITE;
@@ -93,7 +94,7 @@ void print_path(G *g,int s,int v,int *pi){
 	}
 }
 
-static void DFS_visit(int u,G *g,int *d,int *f,int *pi,List *topsort,int *time,int *color){
+static void DFS_visit(int u,G *g,int *d,int *f,int *pi,List *topsort,int *time,Color *color){
 	int v;
 	color[u] = GRAY;
 	(*time)++;
@@ -116,8 +117,10 @@ static void DFS_visit(int u,G *g,int *d,int *f,int *pi,List *topsort,int *time,i
 
 
 void DFS(G *g,int *d,int *f,int *pi,List *topsort){
-	int i,*color,time;
-	color = (int *)malloc(sizeof(int)*g->n);
+	
+	int i,time;
+	Color *color;
+	color = (Color *)malloc(sizeof(Color)*g->n);
 	for (i=0;i<g->n;i++){
 		color[i] =WHITE;
 		pi[i] = -1;
@@ -130,11 +133,12 @@ void DFS(G *g,int *d,int *f,int *pi,List *topsort){
 	free(color);
 }
 
-
+// use for-loop in the main loop. inner loop use listnode.next.
 void DFS_(G *g,int *d,int *f,int *pi,List *topsort){
-	int i,u,v,*color,time;
+	int i,u,v,time;
 	ListNode *nu,*nv;
-	color = (int *)malloc(sizeof(int)*g->n);
+	Color *color;
+	color = (Color *)malloc(sizeof(int)*g->n);
 	for (i=0;i<g->n;i++){
 		color[i] =WHITE;
 		pi[i] = -1;
@@ -221,13 +225,13 @@ void DFS_(G *g,int *d,int *f,int *pi,List *topsort){
 	freeStack(stack,0);
 }
 
-
+//use link list for the main loop. simplify the iteration.
 void DFS_1(G *g,int *d,int *f,int *pi,List *topsort){
-	int i,u,v,*color,time;
+	int i,u,v,time;
 	G_e *e;
 	ListNode *nu,*nv;
 	List *toplist=newList();
-	color = (int *)malloc(sizeof(int)*g->n);
+	Color *color = (Color *)malloc(sizeof(int)*g->n);
 	for (i = g->n -1;i>=0;i--){
 		color[i] =WHITE;
 		pi[i] = -1;
@@ -316,4 +320,176 @@ void DFS_1(G *g,int *d,int *f,int *pi,List *topsort){
 	free(color);
 	freeStack(stack,0);
 }
+
+static int wCompare(PData a,PData b){
+	G_e *e;
+	e = (G_e *)a;
+	float k1 =e->weight;//e->v1 *100 + e->v2*10;
+	e = (G_e *)b;
+	float r =k1 - e->weight;// *100 + e->v2*10;
+
+
+	if ( r > -1.0e-5 && r < 1.0e-5 )
+		return 0;
+	else
+		return r; // convert max_heap to min_heap.
+}
+
+
+void mst_Kruskal(G *g,List *mst){
+	int i,j,u,v;
+	Dset *sv =(Dset *)malloc(sizeof(Dset)*g->n);
+	for (i=0;i<g->n;i++)
+		set_make(&(sv[i]));
+
+	//omitted: clear all node in mst
+
+	//Heap *weightSort = newHeap(g->n,wCompare);
+	PData a[100];// =(PData *)malloc(sizeof(PData)*100);should use a dynamic min-heap.
+
+	ListNode *n;
+	j=0;
+	for (i=0;i<g->n;i++){
+		n = g->v_adj[i]->head;
+		while(n){
+			a[j++] = (PData)(n->data);
+			n = n->next;
+		}
+	}
+
+	heap_sort(a,j,wCompare);
+
+	for(i=0;i<j;i++){
+		G_e *e= (G_e *)(a[i]);
+		u = e->iBegin;
+		v = e->iEnd;
+		if (set_find(&(sv[u])) != set_find(&(sv[v])) ){
+			list_insert(mst,e);
+			set_union(&(sv[u]),&(sv[v]));
+		}
+	}
+	//free(a);
+	free(sv);
+}
+/*
+struct K{
+	int pos;
+	float value;
+	int inQ;
+}
+
+static int keyCompare(PData a,PData b){
+	
+	float r = (K *)a->value - (K *)b->value; 
+	if ( r > -1.0e-5 && r < 1.0e-5 )
+		return 0;
+	else
+		return r; // convert max_heap to min_heap.
+}
+
+//no way to efficiently decreasekey of the min-queue. index can't be determned easyly. abort.
+
+void mst_Prim(G *g,int r,int *pi){
+	int i;
+	K *key = (K *)malloc(sizeof(K)*g->n);
+	Heap *h= newHeap(100,keyCompare);
+	
+	for (i =0 ;i< g->n; i++){
+		key[i].pos=i;
+		key[i].value = INFINITE;
+		key[i].inQ =1;
+		
+		pi[i] = -1;
+	}
+	key[r] = 0;
+	build_(h,r);
+	
+	
+	
+	
+	free(key);
+}
+*/
+
+
+static void initialize_single_source(G *g,int s,int *d,int *pi){
+	for (int i =0 ;i< g->n ;i++){
+		d[i] = INFINITE;
+		pi[i] = -1;
+	}
+	d[s] = 0;
+}
+
+static void relax(G *g,int u,int v,float w,int *d,int *pi){
+	float f =  d[u] + w;
+	if (d[v] > f){
+		d[v] = f;
+		pi[v] = u;
+	}
+}
+
+//Single source shortest path ,return 0 means there is negtive weight cycle. otherwise, 1;
+int Bellman_Ford(G *g,int s,int *d,int *pi){
+	initialize_single_source(g,s,d,pi);
+	int i,ii,u,v;
+	float w;
+	ListNode *n;
+	for (i=0;i< g->n - 1;i++){
+		for (u=0;u< g->n ;u++){
+			n= g->v_adj[u]->head;
+			while (n){
+				G_e *e = (G_e *)(n->data);
+				v = e->iEnd;
+				w = e->weight;
+				relax(g,u,v,w,d,pi);
+				n = n->next;
+			}
+			
+		}
+	}
+	
+	for (u=0;u< g->n ;u++){
+		n= g->v_adj[u]->head;
+		while (n){
+			G_e *e = (G_e *)(n->data);
+			v = e->iEnd;
+			w = e->weight;
+			if (d[v] > d[u] + w )
+				return 0;
+			
+			n = n->next;
+		}
+		
+	}
+	return 1;
+}
+
+void dag_shortest_paths(G *g,int s,int *d,int *pi){
+	int u,v,w;
+	int *f = (int *)malloc(sizeof(int)*g->n);
+	List *topsort = newList();
+	ListNode *ns,*ne;
+	DFS_1(g,d,f,pi,topsort);
+	initialize_single_source(g,s,d,pi);
+	ns = topsort->head;
+	while(ns){
+		u = (int)(ns->data);
+		ne = g->v_adj[u]->head;
+		while(ne){
+			G_e *e = (G_e *)(ne->data);
+			v = e->iEnd;
+			w = e->weight;
+			relax(g,u,v,w,d,pi);
+			
+			ne = ne->next;
+		}
+		
+		ns = ns->next;
+	}
+	
+	
+	free(f);	
+	freeList(topsort,0);
+}
+
 
