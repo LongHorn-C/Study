@@ -63,34 +63,29 @@ static void _build_max_heap(Heap *h){
 		_max_heapify(h,i);
 }
 
+Heap * heap_attach(Heap* h,PData *a,int n,CompareFunction fCompare,Fun_on_track_queue on_track){
+	if (h->a)
+		free(h->a);
+	h->a = a;
+	h->len = n;
+	h->size = n;
+	h->fCompare = fCompare;
+	h->on_track = on_track;
+	_build_max_heap(h);
+	return h;
+}
 
 void heap_sort(PData *a,int n,CompareFunction fCompare){
 	int i;
 	Heap h;
-	h.a = a;
-	h.len = n;
-	h.size = n;
-	h.fCompare = fCompare;
-	h.on_track = 0;
-    /*h.o = (int *)malloc(sizeof(int)*n);
-    h.c = (int *)malloc(sizeof(int)*n);
-    for(i=0;i<n;i++){
-        (h.o)[i] = i;
-        (h.c)[i] = i;
-    }*/
-	
-	_build_max_heap(&h);
-	
+	h.a=NULL;// just in case. avoid freeing an uninitilized pointer.
+	heap_attach(&h,a,n,fCompare,0);
 	for (i = n-1 ;i>=1;i--){
-/*		PData temp= h.a[0];
-		h.a[0]=a[i];
-		h.a[i]=temp;*/
 		_swap(&h,i,0);
 		h.size--;
 		_max_heapify(&h,0);
 	}
-    /*free(h.o);
-    free(h.c);*/
+ 
 }
 
 //following is a priority queue.

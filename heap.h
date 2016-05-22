@@ -15,6 +15,10 @@ Track * newTrack(int nn);
 void record_swap(Track *t,int i,int j);
 void record_update(Track *t,int iDes,int iSrc);
 void freeTrack(Track *t); 
+int track_origin_to_current(Track *t,int iOrigin);
+int track_current_to_origin(Track *t,int iCurrent);
+
+
 
 enum Op_type {otSwap,otSet,otRemove,otInsert};
 
@@ -37,10 +41,42 @@ PData heap_maximum(Heap *hp);
 PData heap_extract_max(Heap *hp);
 int max_heap_insert(Heap *hp,PData aItem);
 void max_heap_update_key(Heap *hp,int i);
-int track_origin_to_current(Track *t,int iOrigin);
-int track_current_to_origin(Track *t,int iCurrent);
 
 Heap * newHeap(int n,CompareFunction fCompare);
+Heap * heap_attach(Heap *h,PData *,int n,CompareFunction fCompare,Fun_on_track_queue on_track);
 void freeHeap(Heap *hp,int bFreeTarget);
+
+/*
+//code example of track piority queue
+
+typedef struct _ta{
+	int v;
+	int q_index;//-1 means being not in Queue;
+} Ta; 
+
+
+static int on_track_q(enum Op_type ot,int i,PData di,int j,PData dj){
+	Ta *ta=(Ta *)di;		
+	switch (ot){
+		case otSwap:
+			ta->q_index = i;
+			Ta *tj=(Ta *)dj;
+			tj->q_index = j;
+			break;
+		case otSet:
+			ta->q_index = i;
+			break;
+		case otRemove:
+			ta->q_index = -1;
+			break;
+		case otInsert:
+			ta->q_index = i;
+			break;
+	}
+}
+
+min_queue.on_track = on_track_q;
+
+*/
 
 #endif

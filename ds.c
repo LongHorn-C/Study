@@ -102,18 +102,17 @@ ListNode * list_search(List *l,PData matchKey,CompareFunction fCompare){
 	ListNode *x=l->head;
 	while(x != NULL && fCompare(matchKey,x->data) != 0)
 		x=x->next;
-	if (x)
-		return x->data;
-	else
-		return NULL;
+	return x;
 }
+
 ListNode * list_head(List *l){
 	return l->head;
 }
 
 List *newList(){
 	List * x=(List *)malloc(sizeof(List));
-	x->head =NULL;
+	x->head = NULL;
+	x->tail = NULL;
 	return x;
 }
 
@@ -124,7 +123,7 @@ void freeList(List *l,int bFreeTarget){
 	ListNode *t, *x;
 	x = l->head;
 	while (x != NULL){
-		t=x->next;
+		t= x->next;
 		if (bFreeTarget)
 			free(x->data);
 		free(x);
@@ -133,16 +132,33 @@ void freeList(List *l,int bFreeTarget){
 	free(l);
 }
 
-static void _list_insert(List *l,ListNode *x){
+static void _list_prepend(List *l,ListNode *x){
 	x->next = l->head;
 	if (l->head != NULL)
 		l->head->prev = x;
+	
 	l->head = x;
 	x->prev =NULL;
+	
+	if(l->tail ==NULL)
+		l->tail = x;
 }
 
 
-static int _list_delete(List *l,ListNode *x){
+static void _list_append(List *l,ListNode *x){
+	x->prev = l->tail;
+	if (l->tail != NULL)
+		l->tail->next = x;
+	
+	l->tail = x;
+	x->next =NULL;
+	
+	if(l->head ==NULL)
+		l->head = x;
+}
+
+
+int list_delete(List *l,ListNode *x){
 	if (!x)
 		return 0;
 	if (x->prev != NULL)
@@ -151,18 +167,28 @@ static int _list_delete(List *l,ListNode *x){
 		l->head = x->next;
 	if (x->next !=NULL)
 		x->next->prev = x->prev;
+	else//no prev means that x  is the tail;
+		l->tail = x->prev;
 	return 1;
 }
 
-void list_insert(List *l,PData aItem){
+void list_prepend(List *l,PData aItem){
 	ListNode * x=(ListNode *)malloc(sizeof(ListNode));
 	x->data = aItem;
-	_list_insert(l,x);
+	_list_prepend(l,x);
 }
 
-int list_delete(List *l,PData matchKey,CompareFunction fCompare){
+void list_append(List *l,PData aItem){
+	ListNode * x=(ListNode *)malloc(sizeof(ListNode));
+	x->data = aItem;
+	_list_append(l,x);
+}
+
+int list_delete_by_data(List *l,PData matchKey,CompareFunction fCompare){
 	ListNode *x = list_search(l,matchKey,fCompare);
-	return _list_delete(l,x);
+	int r = list_delete(l,x);
+	free(x);
+	return r;
 }
 
 HashTable * newHashTable(int len,HashFunction fHash,CompareFunction fCompare){
@@ -196,7 +222,7 @@ void hash_insert(HashTable *pH,PData aItem){
 	//printf("i=%d\n",i);
 	if (!pH->slots[i])
 		pH->slots[i] = newList();
-	list_insert(pH->slots[i],aItem);
+	list_prepend(pH->slots[i],aItem);
 }
 
 PData hash_retrieve(HashTable *pH,PData matchKey){
@@ -207,7 +233,7 @@ PData hash_retrieve(HashTable *pH,PData matchKey){
 void hash_delete(HashTable *pH,PData matchKey){
 	int i = pH->fHash(matchKey);
 	if (pH->slots[i])
-		list_delete(pH->slots[i],matchKey,pH->fCompare);
+		list_delete_by_data(pH->slots[i],matchKey,pH->fCompare);
 }
 
 int hashFun_div(int k,int m){

@@ -17,12 +17,12 @@ int iCompare(PData a,PData b);
 int xCompare(PData a,PData b);
 int randomAB(int a,int b);
 
-void produceA(int *a, int n);
-void printA(int *a, int n);
+void produce_ii(int *a, int n);
+void print_ii(int *a, int n);
 
 void print_ex(PData i);
-void produce_ex_a(PData *a,int n);
-void print_ex_a(PData *a,int n);
+void produce_exx(PData *a,int n);
+void print_exx(PData *a,int n);
 
 
 #endif

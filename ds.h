@@ -12,13 +12,6 @@ typedef void * PData;
 
 typedef int (*CompareFunction)(void *pA,void *pB);
 
-typedef struct {
-	int v1;
-	float v2;
-	char memo[11];
-} Item_ex;
-
-
 //stack and queue ************************************
 typedef struct {
 	PData *a;
@@ -59,6 +52,7 @@ typedef struct list_node ListNode;
 
 typedef struct {
 	ListNode *head;
+	ListNode *tail;
 	//CompareFunction fCompare;
 } List;
 
@@ -66,8 +60,10 @@ List *newList();
 void freeList(List *l,int bFreeTarget);
 
 ListNode * list_search(List *l,PData matchKey,CompareFunction fCompare);
-void list_insert(List *l,PData aItem);//aItem must be malloced before call. can't be local stack address
-int list_delete(List *l,PData matchKey,CompareFunction fCompare);
+void list_prepend(List *l,PData aItem);//new item became new head;
+void list_append(List *l,PData aItem);//new item became new tail;
+int list_delete(List *l,ListNode *x);//won't free the node deleted 
+int list_delete_by_data(List *l,PData matchKey,CompareFunction fCompare);//free the node containing target key.
 
 //binary tree******************************************
 typedef struct binaryTreeNode{
@@ -92,7 +88,7 @@ typedef struct {
 	List **slots;
 	HashFunction fHash;
 	CompareFunction fCompare;
-} HashTable;
+} HashTable; 
 
 HashTable * newHashTable(int len,HashFunction fHash,CompareFunction fCompare);
 void freeHashTable(HashTable *p,int bFreeTarget);
@@ -119,7 +115,20 @@ void set_union(Dset *x,Dset *y);
 void set_link(Dset *x,Dset *y);
 Dset * set_find(Dset *x);
 
+/* Dset example code
+	Dset s[10];
+	int i;
+	for (i=0;i<10;i++){
+		s[i].data = a[i];
+		set_make(&s[i]);
+	}
+	
+	i = set_find(&(s[1])) != set_find(&(s[5]));
+	tcut_assert("1 !=5 not OK\n", i);
 
+	
+	set_union(&(s[1]),&(s[5]));
+*/
 
 
 

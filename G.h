@@ -44,12 +44,16 @@ void BFS(G *g,int s,int *d,int *pi);
 void print_path(G *g,int s,int v,int *pi);
 
 void DFS(G *g,int *d,int *f,int *pi,List *topsort);
-void DFS_1(G *g,int *d,int *f,int *pi,List *topsort);// non recursive version. use stack
+// non recursive version. use stack
+void DFS_1(G *g,int *d,int *f,int *pi,List *topsort);
 
 // minimum-span-tree
 void mst_Kruskal(G *g,List *mst);
-
+void mst_Prim(G *g,int r,int *pi);
 //Single source shortest path ,return 0 means there is negtive weight cycle. otherwise, 1;
-int Bellman_Ford(G *g,int s,int *d,int *pi);
-void dag_shortest_paths(G *g,int s,int *d,int *pi);
+int Bellman_Ford(G *g,int s,float *d,int *pi);
+void dag_shortest_paths(G *g,int s,float *d,int *pi);
+
+//when all the edges are nonnegative
+void Dijkstra(G *g,int s,float *d,int *pi,List *l);
 #endif
