@@ -452,9 +452,61 @@ static char * test_Dijkstra(){
 	freeG(g);
 }
 
+static void test_Johnson(){
+	G *g =newG(5);
+	assignVertex(g,0,"1");
+	assignVertex(g,1,"2");
+	assignVertex(g,2,"3");
+	assignVertex(g,3,"4");
+	assignVertex(g,4,"5");
+	
+	addEdge(g,0,1,3);
+	addEdge(g,0,2,8);
+	addEdge(g,0,4,-4);
+	
+	addEdge(g,1,3,1);
+	addEdge(g,1,4,7);
+	
+	addEdge(g,2,1,4);
+	
+	addEdge(g,3,0,2);
+	addEdge(g,3,2,-5);
+	
+	addEdge(g,4,3,6);
+	
+	
+	float *d =(float *)malloc(sizeof(float)*g->n * g->n);
+	int *pi =(int *)malloc(sizeof(int)*g->n * g->n);
+	
+	Johnson(g,d,pi);
+	
+	for (int u=0;u<5;u++){
+		printf("u:%d\n",u);
+		printf("d array: ");
+		for (int i=0;i<g->n;i++)
+			printf("%f,",d[u*5+i]);
+		printf("\n");
+
+		printf("pi array: ");
+		print_ii(pi+u*5,5);
+		printf("\n*********************\n");
+	}
+	
+/*	print_ii(pi,25);
+	for (int i=0;i<25;i++){
+		printf("%f,",d[i]);
+	}
+	*/
+	free(d);
+	free(pi);
+	freeG(g);
+	
+}
+
 
 int main(){
-	test_Dijkstra();
+	test_Johnson();
+	//test_Dijkstra();
 	//test_dag_shortest_path();
 	//test_Bellman_Ford();
 	//test_mst_Kruskal();

@@ -51,4 +51,5 @@ void dag_shortest_paths(G *g,int s,float *d,int *pi);
 
 //when all the edges are nonnegative
 void Dijkstra(G *g,int s,float *d,int *pi/* ,List *l */);
+int Johnson(G *g,float *d,int *pi);
 #endif

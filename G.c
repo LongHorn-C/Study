@@ -7,6 +7,7 @@
 #include "G.h"
 #include "heap.h"
 #include "sort.h"
+#include "common.h" //for debug
 
 //#define STRANGE_BIG 0x7fffffbf
 //INT_MAX INT_MIN #define INFINITE 0x7fffffff
@@ -521,7 +522,7 @@ int Bellman_Ford(G *g,int s,float *d,int *pi){
 			v = e->iEnd;
 			w = e->weight;
 			if (d[v] > d[u] + w )
-				return 0;
+				return 0; //negative cycle found
 
 			n = n->next;
 		}
@@ -591,9 +592,9 @@ void Dijkstra(G *g,int s,float *d,int *pi/*,List *l*/){
 			G_e *edge =(G_e *)(ne->data);
 			int v = edge->iEnd;
 			int iq = vv[v].i_in_q;
-			
-			int w = edge->weight;
-			
+
+			float w = edge->weight;
+
 			if ( iq != -1 && _relax(u,v,w,d,pi) ){
 				vv[v].d = d[v];
 				max_heap_update_key(&min_queue,iq);
@@ -603,5 +604,89 @@ void Dijkstra(G *g,int s,float *d,int *pi/*,List *l*/){
 	}
 
 	free(vv);
+}
+
+static void _copy_graph(G *s,G *d){
+	for (int i =0 ;i<s->n;i++)
+		assignVertex(d,i,s->v[i].name);
+	//assignVertex(g_, g->n ,"s_");
+
+	for (int u=0;u<s->n;u++){
+			ListNode *ne = s->v_adj[u]->head;
+			while (ne){
+				G_e *edge =(G_e *)(ne->data);
+				int v = edge->iEnd;
+				float w = edge->weight;
+				addEdge(d,u,v,w);
+
+				ne = ne->next;
+			}
+	}
+}
+
+//d and pi are n*n array.
+int Johnson(G *g,float *d,int *pi){
+	int result;
+	//new g_ with additional vertex s_
+	G *g_ =newG(g->n + 1);
+	_copy_graph(g,g_);
+	assignVertex(g_, g_->n - 1,"s_");
+	for (int i=0;i<g->n;i++)
+		addEdge(g_,g->n,i,0);
+/*
+	for (int i=0;i<g_->n;i++)
+		printf("  i:%d,name:%s",i,g_->v[i].name);
+	printf("  end of v \n");
+
+*/	
+
+	//
+	float *d_ =(float *)malloc(sizeof(float) * g_->n);
+	int *pi_ = (int *)malloc(sizeof(int) * g_->n);
+	if ( Bellman_Ford(g_,g_->n-1,d_,pi_) == 0){
+		printf("the input graph contains a negative-weight cycle\n");
+		result = 0;
+	}
+	else{
+/*		printf("d_:");
+		print_ff(d_,6);
+		printf("pi_:");
+		print_ii(pi_,6);
+	*/	
+		G *g_c =newG(g->n);
+		_copy_graph(g,g_c);
+		for (int u=0;u<g->n;u++){
+				ListNode *ne = g_c->v_adj[u]->head;
+				while (ne){
+					G_e *edge =(G_e *)(ne->data);
+					int v = edge->iEnd;
+					edge->weight = edge->weight + d_[u] - d_[v];
+
+					ne = ne->next;
+				}
+
+		}
+		float *d_c =(float *)malloc(sizeof(float) * g_c->n);
+		int *pi_c = (int *)malloc(sizeof(int) * g_c->n);
+		for (int u=0;u<g_c->n;u++){
+			Dijkstra(g_c,u,d_c,pi_c);
+		//	printf(" dc: ");
+		//	print_ff(d_c,5);
+			for (int v=0;v<g_c->n;v++){
+				d[u * g_c->n + v] = d_c[v] + d_[v] - d_[u];
+				pi[u * g_c->n + v] = pi_c[v];
+			}
+		}
+		free(g_c);
+		free(d_c);
+		free(pi_c);
+		result = 1;
+	}
+
+	free(g_);
+	free(d_);
+	free(pi_);
+
+	return result;
 }
 

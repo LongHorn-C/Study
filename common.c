@@ -1,17 +1,36 @@
-﻿#include <stdlib.h>
+﻿// gcc -o gt g_test.c g.c common.o ds.o heap.o sort.o
+
+
+
+#include <stdlib.h>
 #include "common.h"
-int fCompare(PData a,PData b){
-	float r = *((float *)a) - *((float *)b);
+
+
+
+int i_v_compare(int a,int b){
+	if (a==b)
+		return 0;
+	else 
+		return a>b ? 1 : -1;
+}
+
+int f_v_compare(float a,float b){
+	float r = a - b;
 	if (r < 1.0e-5  && r > -1.0e-5)
 		return 0;
-	else if (r <0)
-		return -1;
 	else
-		return 1;
+		return a > b ? 1:-1;	
+}
+
+
+int fCompare(PData a,PData b){
+	float f1 = *((float *)a);
+	float f2 = *((float *)b);
+	return f_v_compare(f1,f2);
 }
 
 int iCompare(PData a,PData b){
-	return *((int *)a) - *((int *)b);
+	return i_v_compare(*((int *)a) , *((int *)b));
 }
 
 int pointerCompare(PData a,PData b){
@@ -35,7 +54,7 @@ int randomAB(int a,int b){
 }
 
 
-void produce_ex_a(PData *a,int n){
+void produce_exx(PData *a,int n){
 	Item_ex *k;
 	for (int i =0;i<n;i++){
 		a[i] = malloc(sizeof(Item_ex));
@@ -46,7 +65,7 @@ void produce_ex_a(PData *a,int n){
 	}
 }
 
-void print_ex_a(PData *a,int n){
+void print_exx(PData *a,int n){
 //	Item_ex *k;
 	printf("begin Data array:\n");
 	for (int i =0;i<n;i++){
@@ -64,16 +83,24 @@ void print_ex(PData i){
 }
 
 
-void printA(int *a, int n){
+void print_ii(int *a, int n){
 	for (int i=0;i<n;i++)
 		printf("%d,",a[i]);
 	printf("\n");
 }
 
 
-void produceA(int *a, int n)
+void produce_ii(int *a, int n)
 {
 	for (int i=0;i<n;i++)
 		a[i] = 1 + rand() % 99;
 
 }
+
+
+void print_ff(float *a, int n){
+	for (int i=0;i<n;i++)
+		printf("%f,",a[i]);
+	printf("\n");
+}
+
