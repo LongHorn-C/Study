@@ -9,13 +9,8 @@
 //typedef int[N][N] G_matrix;
 
 struct G_vertex{
-	char name[10];
-	//ID always is vertex array member's index
-		//PData data;
-	//List adjacent;
-	//int weight;//weight for adjacent edge, NOT for vertex 
-	//struct G_vertex * parent;//for set 
-	//int rank;                //for set 
+	char name[20];
+
 };
 
 struct G_edge{
@@ -55,5 +50,5 @@ int Bellman_Ford(G *g,int s,float *d,int *pi);
 void dag_shortest_paths(G *g,int s,float *d,int *pi);
 
 //when all the edges are nonnegative
-void Dijkstra(G *g,int s,float *d,int *pi,List *l);
+void Dijkstra(G *g,int s,float *d,int *pi/* ,List *l */);
 #endif
