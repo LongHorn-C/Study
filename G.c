@@ -22,8 +22,10 @@ G *newG(int n){
 	g->n = n;
 	g->v = (G_v *)malloc(sizeof(G_v) * n);
 	g->v_adj =(List **)malloc(sizeof(List *)*n);
-	for (int i=0;i<n;i++)
+	for (int i=0;i<n;i++){
 		g->v_adj[i] =newList();
+		g->v[i].data = 0;
+	}
     return g;
 }
 
@@ -31,22 +33,37 @@ void assignVertex(G *g,int i,char *name){
 	strcpy(g->v[i].name,name);
 }
 
-void addEdge(G* g,int u,int v,float w){
+G_e * addEdge(G* g,int u,int v,float w){
 	G_e *e=(G_e *)malloc(sizeof(G_e));
 	e->iBegin = u;
 	e->iEnd = v;
 	e->weight = w;
+	e->data =0;
 	list_prepend(g->v_adj[u],(PData)e);
+	return e;
 }
 
-void addEdge_NoDirection(G* g,int u,int v,float w){
+G_e * addEdge_NoDirection(G* g,int u,int v,float w){
 	addEdge(g,u,v,w);
-	addEdge(g,v,u,w);
+	return addEdge(g,v,u,w);
 }
 
 void freeG(G *g){
+	int i;
+	/*for (i=0;i<g->n;i++)
+		free(g->v[i].data);
+	*/
 	free(g->v);
-	for (int i=0;i<g->n;i++){
+	for (i=0;i<g->n;i++){
+
+		/*ListNode node = g->v_adj[i].head;
+		while (node){
+			G_e *edge =(G_e*)node->data;
+			free(edge->data);
+			//free(edge);
+			node =node->next;
+		}*/
+
 		freeList(g->v_adj[i],1);
 	}
 	free(g->v_adj);
@@ -351,6 +368,7 @@ void mst_Kruskal(G *g,List *mst){
 		set_make(&(sv[i]));
 
 	//omitted: clear all node in mst
+	list_clear(mst,0);
 
 	//Heap *weightSort = newHeap(g->n,wCompare);
 	PData a[100];// =(PData *)malloc(sizeof(PData)*100);should use a dynamic min-heap.
@@ -624,6 +642,8 @@ static void _copy_graph(G *s,G *d){
 	}
 }
 
+
+//All pair shortest path
 //d and pi are n*n array.
 int Johnson(G *g,float *d,int *pi){
 	int result;
@@ -638,7 +658,7 @@ int Johnson(G *g,float *d,int *pi){
 		printf("  i:%d,name:%s",i,g_->v[i].name);
 	printf("  end of v \n");
 
-*/	
+*/
 
 	//
 	float *d_ =(float *)malloc(sizeof(float) * g_->n);
@@ -652,7 +672,7 @@ int Johnson(G *g,float *d,int *pi){
 		print_ff(d_,6);
 		printf("pi_:");
 		print_ii(pi_,6);
-	*/	
+	*/
 		G *g_c =newG(g->n);
 		_copy_graph(g,g_c);
 		for (int u=0;u<g->n;u++){
@@ -690,3 +710,237 @@ int Johnson(G *g,float *d,int *pi){
 	return result;
 }
 
+
+//Maximum Flow
+/*
+Ford_Fulkerson_Method(G *g,s,t)
+initilize flow f to 0
+while there exists an augumenting path p
+	do augument flow f along p
+return f;
+
+*/
+
+typedef struct{
+	float f;
+	float c;
+	G_e * reverse;//if current edge is edge(u,v),then /reverse/ points to edge(v,u)
+} _Flow_and_capacity;
+
+
+static G_e * _locate_edge(G *g,int u,int v){
+	ListNode *ne = g->v_adj[u]->head;
+	while (ne){
+			G_e *edge =(G_e *)(ne->data);
+			if (edge->iEnd == v)
+				return edge;
+			ne = ne->next;
+		}
+	return 0;
+}
+
+static void _initialize_graph_flow_capacity(G *g){
+	_Flow_and_capacity *fc,fcR;
+	for (int u=0;u<g->n;u++){
+		ListNode *ne = g->v_adj[u]->head;
+		while (ne){
+			G_e *edge =(G_e *)(ne->data);
+			fc = (_Flow_and_capacity *)edge->data;
+			if (fc ==0){
+				fc = (_Flow_and_capacity *)malloc(sizeof(_Flow_and_capacity));
+				fc->f = 0;
+				fc->c = edge->weight;
+
+				edge->data = fc;
+			}
+
+			int v = edge->iEnd;
+			G_e *edgeR =_locate_edge(g,v,u);
+			if (edgeR == 0)
+				edgeR =addEdge(g,v,u,0);
+			fc->reverse = edgeR;
+
+			if (edgeR->data ==0){
+				edgeR->data = malloc(sizeof(_Flow_and_capacity));
+				_Flow_and_capacity *fcR = (_Flow_and_capacity *)(edgeR->data);
+				fcR->f = 0;
+				fcR->c = edgeR->weight;
+				fcR->reverse = edge;
+			}
+			ne = ne->next;
+		}
+
+	}
+}
+
+static void _finalize_graph_flow_capacity(G *g){
+	for (int u=0;u<g->n;u++){
+		ListNode *ne = g->v_adj[u]->head;
+		while (ne){
+			G_e *edge =(G_e *)(ne->data);
+			free(edge->data);
+
+			ne = ne->next;
+		}
+
+	}
+}
+
+//for debug
+static void  _chk_g(G *g){
+	
+	for (int u=0;u<g->n;u++){
+		ListNode *ne = g->v_adj[u]->head;
+		while (ne){
+			G_e *edge =(G_e *)(ne->data);
+			_Flow_and_capacity *f = (_Flow_and_capacity *) edge->data;
+
+			printf("(%d,%d)\tweight:%f,\tflow:%f,\tcapacity:%f\n",edge->iBegin,edge->iEnd,edge->weight,f->f,f->c);
+			
+			ne = ne->next;
+		}
+
+	}
+}
+
+//the result maximum flow restored in the edge.data which point to a float address.
+void Ford_Fulkerson(G *g,int s,int t,F_find_augument_path fap){
+	G *g_c =newG(g->n);
+	_copy_graph(g,g_c);
+	_initialize_graph_flow_capacity(g_c);
+
+	//_chk_g(g_c);
+	
+	List *path =newList();
+	while ( fap(g_c,s,t,path) ){
+        //print path;
+		//printf("\nfind 1  ");
+		float cf = FLT_MAX;
+		ListNode *node =path->head;
+		while(node){
+			G_e *edge = (G_e *) node->data;
+			_Flow_and_capacity *f = (_Flow_and_capacity *) edge->data;
+			if ( f->c < cf )
+				cf = f->c;
+            //printf("(%d->%d)",edge->iBegin,edge->iEnd);
+			node = node->next;
+		}
+		//printf("  end path.");
+		//now cf is the minimum augumentable flow
+
+		node =path->head;
+		while(node){
+			G_e *edge = (G_e *) node->data;
+			_Flow_and_capacity *fc = (_Flow_and_capacity *) edge->data;
+			fc->f = fc->f + cf;
+			fc->c = fc->c - fc->f;
+
+			G_e *edgeR = fc->reverse;
+			_Flow_and_capacity *fcR = (_Flow_and_capacity *) edgeR->data;
+			fcR->f = - fc->f;
+			fcR->c =fcR->c + fc->f;
+
+			node = node->next;
+		}
+	}
+	freeList(path,0);
+	
+	//copy maximum flow from g_c to original graph g;
+	for (int u=0;u<g->n;u++){
+		ListNode *ne = g->v_adj[u]->head;
+		while (ne){
+			G_e *edge =(G_e *)(ne->data);
+			int v = edge->iEnd;
+			float *mf =(float *)malloc(sizeof(float));
+			G_e *es =_locate_edge(g_c,u,v);
+			_Flow_and_capacity *fcs = es->data;
+			*mf = fcs->f;
+			edge->data = mf;
+
+			ne = ne->next;
+		}
+
+	}
+
+	_finalize_graph_flow_capacity(g_c);
+	freeG(g_c);
+}
+
+
+static int _BFS_for_Edmond_Karp(G *g,int s,int t,List *path){
+	list_clear(path,0);
+
+	int *d =(int *)malloc(sizeof(int)*g->n);
+	int *pi =(int *)malloc(sizeof(int)*g->n);
+
+//{begin BSF
+	int i;
+	Color *color =(Color *)malloc(sizeof(Color)*g->n);
+	for (i=0;i< g->n;i++){
+		color[i] =0;
+		d[i] = INT_MAX;
+		pi[i] = -1;
+	}
+
+	color[s] = GRAY;
+	d[s] =0;
+	Queue *q =newQueue(100);
+	enqueue(q,(PData)s);
+	while (!queue_is_empty(q)){
+		int u =(int)dequeue(q);
+		G_e *e;
+		ListNode *n;
+		n=g->v_adj[u]->head;
+		while (n){
+			e=(G_e *)(n->data);
+			_Flow_and_capacity *fc = (_Flow_and_capacity *) e->data;
+			int v = e->iEnd;
+			if( fc->c > 0 ){   //this part is different from the original BFS
+				if(color[v] == WHITE){
+					color[v] = GRAY;
+					d[v] = d[u] +1;
+					pi[v] = u;
+					enqueue(q,(PData)v);
+				}
+			}
+			n=n->next;
+		}
+		color[u] = BLACK;
+	}
+	free(color);
+	freeQueue(q,0);
+//}end of BFS
+
+
+	int child =t;
+	int parent =pi[child];
+	if ( parent == -1 )
+		return 0;
+	while (parent != -1){
+		PData data=(PData)_locate_edge(g,parent,child);
+		list_prepend(path,data);
+
+		child =parent;
+		parent = pi[parent];
+	}
+	free(d);
+	free(pi);
+	return 1;
+}
+
+void Edmonds_Karp(G *g,int s,int t){
+	Ford_Fulkerson(g,s,t,_BFS_for_Edmond_Karp);
+}
+
+void free_graph_flow_data(G *g){
+	for (int u=0;u<g->n;u++){
+		ListNode *ne = g->v_adj[u]->head;
+		while (ne){
+			G_e *edge =(G_e *)(ne->data);
+			free(edge->data);
+
+			ne = ne->next;
+		}
+
+	}
+}

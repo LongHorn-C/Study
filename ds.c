@@ -132,6 +132,23 @@ void freeList(List *l,int bFreeTarget){
 	free(l);
 }
 
+void list_clear(List *l,int bFreeTarget){
+	if (!l)
+		return;
+	ListNode *t, *x;
+	x = l->head;
+	while (x != NULL){
+		t= x->next;
+		if (bFreeTarget)
+			free(x->data);
+		free(x);
+		x = t;
+	}
+	l->head = 0;
+	l->tail = 0;
+}
+
+
 static void _list_prepend(List *l,ListNode *x){
 	x->next = l->head;
 	if (l->head != NULL)

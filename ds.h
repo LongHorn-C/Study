@@ -64,6 +64,9 @@ void list_prepend(List *l,PData aItem);//new item became new head;
 void list_append(List *l,PData aItem);//new item became new tail;
 int list_delete(List *l,ListNode *x);//won't free the node deleted 
 int list_delete_by_data(List *l,PData matchKey,CompareFunction fCompare);//free the node containing target key.
+void list_clear(List *l,int bFreeTarget);
+
+
 
 //binary tree******************************************
 typedef struct binaryTreeNode{
