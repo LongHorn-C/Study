@@ -4,43 +4,9 @@
 #define ERR_RESULT 0x80000000 
 #define DEFAULT_CAPACITY 1024
 
-//Stack ,Queue,List, HashTable should be used by pointer (newXXX).
-//other wise it will cause free-memory problem.
-//freeXXX should not be used as this: freeXXX(&localVarible,0/1);
-
 typedef void * PData;
 
 typedef int (*CompareFunction)(void *pA,void *pB);
-
-//stack and queue ************************************
-typedef struct {
-	PData *a;
-	int len;
-	int top;
-} Stack;
-
-typedef struct {
-	PData *a;
-	int len;
-	int head;
-	int tail;
-} Queue;
-
-Stack * newStack(int len);
-void freeStack(Stack *p,int bFreeTarget);
-
-Queue * newQueue(int len);
-void freeQueue(Queue *p,int bFreeTarget);
-
-
-int stack_is_empty(Stack *sp);
-PData pop(Stack *sp);
-void push(Stack *sp,PData x);
-
-int queue_is_empty(Queue *qp);
-void enqueue(Queue *qp,PData x);
-PData dequeue(Queue *qp);
-
 //linked list *******************************************
 struct list_node{
 	void *data;
@@ -65,8 +31,50 @@ void list_append(List *l,PData aItem);//new item became new tail;
 int list_delete(List *l,ListNode *x);//won't free the node deleted 
 int list_delete_by_data(List *l,PData matchKey,CompareFunction fCompare);//free the node containing target key.
 void list_clear(List *l,int bFreeTarget);
+int list_is_empty(List *l);
 
 
+//Stack ,Queue,List, HashTable should be used by pointer (newXXX).
+//other wise it will cause free-memory problem.
+//freeXXX should not be used as this: freeXXX(&localVarible,0/1);
+
+
+
+//stack and queue ************************************
+/*
+typedef struct {
+	PData *a;
+	int len;
+	int top;
+} Stack;
+
+typedef struct {
+	PData *a;
+	int len;
+	int head;
+	int tail;
+} Queue;
+Stack * newStack(int len);
+Queue * newQueue(int len);
+*/
+
+typedef List Queue;
+typedef List Stack;
+
+
+Stack * newStack();
+Queue * newQueue();
+void freeStack(Stack *p,int bFreeTarget);
+void freeQueue(Queue *p,int bFreeTarget);
+
+
+int stack_is_empty(Stack *sp);
+PData pop(Stack *sp);
+void push(Stack *sp,PData x);
+
+int queue_is_empty(Queue *qp);
+void enqueue(Queue *qp,PData x);
+PData dequeue(Queue *qp);
 
 //binary tree******************************************
 typedef struct binaryTreeNode{

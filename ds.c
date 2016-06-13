@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include "ds.h"
 
+
+
+/*
 Stack * newStack(int len){
 	Stack * p=malloc(sizeof(Stack));
 	p->top=-1;
@@ -95,6 +98,8 @@ PData dequeue(Queue *qp){
 		qp->head ++;
 	return x;
 }
+
+*/
 
 ListNode * list_search(List *l,PData matchKey,CompareFunction fCompare){
 	if (!l)
@@ -208,6 +213,61 @@ int list_delete_by_data(List *l,PData matchKey,CompareFunction fCompare){
 	return r;
 }
 
+int list_is_empty(List *l){
+	return l->head == 0;
+}
+
+//Stack and Queue
+
+Stack * newStack(){
+	return newList();
+}
+
+void freeStack(Stack *p,int bFreeTarget){
+	freeList(p,bFreeTarget);
+}
+
+Queue * newQueue(){
+	return newList();
+}
+
+void freeQueue(Queue *p,int bFreeTarget){
+	freeList(p,bFreeTarget);
+}
+
+
+int stack_is_empty(Stack *sp){
+	return sp->head ==0;
+}
+
+void push(Stack *sp,PData x){
+	list_append(sp,x);
+}
+
+PData pop(Stack *sp){
+	if (stack_is_empty(sp)){
+		printf("stack is empty ,error.\n");
+		return NULL;
+	}
+	ListNode *r = sp->tail; 
+	list_delete(sp,r);
+	return r->data;
+}
+
+int queue_is_empty(Queue *qp){
+	return qp->head ==0;
+}
+
+void enqueue(Queue *qp,PData x){
+	list_prepend(qp,x);
+}
+
+PData dequeue(Queue *qp){
+	return pop(qp);
+}
+
+
+//HashTable
 HashTable * newHashTable(int len,HashFunction fHash,CompareFunction fCompare){
 	HashTable *result =(HashTable *)malloc(sizeof(HashTable));
 	//printf("resultOK\n");
