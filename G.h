@@ -27,6 +27,7 @@ typedef struct{
 	int n ;
 	G_v *v;
 	List **v_adj;//every list node data is pointer to G_edge *;
+	PData data; //for extension use
 } G;
 
 G *newG(int n);
@@ -63,4 +64,7 @@ void Ford_Fulkerson(G *g,int s,int t,F_find_augument_path fp);
 void Edmonds_Karp(G *g,int s,int t);
 void free_graph_flow_data(G *);
 
+
+void generic_push_relabel(G *g,int s,int t);
+void relabel_to_front(G *g,int s,int t);
 #endif

@@ -17,6 +17,8 @@
 //#define GRAY 1
 //#define BLACK 2
 
+#define _edge_in_node(n) ((G_e *) (n)->data)
+
 G *newG(int n){
 	G *g =(G *)malloc(sizeof(G));
 	g->n = n;
@@ -83,7 +85,7 @@ void BFS(G *g,int s,int *d,int *pi){
 
 	color[s] = GRAY;
 	d[s] =0;
-	Queue *q =newQueue(100);
+	Queue *q =newQueue();
 	enqueue(q,(PData)s);
 	while (!queue_is_empty(q)){
 		int u =(int)dequeue(q);
@@ -170,7 +172,7 @@ void DFS_(G *g,int *d,int *f,int *pi,List *topsort){
 	}
 	time =0;
 
-	Stack *stack =newStack(100);
+	Stack *stack =newStack();
 	for (i=0;i<g->n;i++){
 		if (color[i]==WHITE){
 			color[i] = GRAY;
@@ -274,7 +276,7 @@ void DFS_1(G *g,int *d,int *f,int *pi,List *topsort){
 	u =  ((G_e *)(nu->data))->iEnd;
 	color[u] =GRAY;
 	d[u] = time;
-	Stack *stack =newStack(100);
+	Stack *stack =newStack();
 	push(stack,nu);
 	//printf("\tpush first u=%d\n",u);
 
@@ -435,6 +437,7 @@ static int _on_track_vq(enum Op_type ot,int i,PData di,int j,PData dj){
 			ta->i_in_q = i;
 			break;
 	}
+	return 0;
 }
 
 
@@ -516,7 +519,7 @@ static int _relax(int u,int v,float w,float *d,int *pi){
 //Single source shortest path ,return 0 means there is negtive weight cycle. otherwise, 1;
 int Bellman_Ford(G *g,int s,float *d,int *pi){
 	_initialize_single_source(g,s,d,pi);
-	int i,ii,u,v;
+	int i,u,v;
 	float w;
 	ListNode *n;
 	for (i=0;i< g->n - 1;i++){
@@ -725,8 +728,12 @@ typedef struct{
 	float f;
 	float c;
 	G_e * reverse;//if current edge is edge(u,v),then /reverse/ points to edge(v,u)
-} _Flow_and_capacity;
+} _E_attr;
 
+//parameter is pointer
+#define _attr_f(e) ((_E_attr *)((e)->data))->f
+#define _attr_c(e) ((_E_attr *)((e)->data))->c
+#define _attr_r(e) (((_E_attr *)((e)->data))->reverse)
 
 static G_e * _locate_edge(G *g,int u,int v){
 	ListNode *ne = g->v_adj[u]->head;
@@ -739,15 +746,15 @@ static G_e * _locate_edge(G *g,int u,int v){
 	return 0;
 }
 
-static void _initialize_graph_flow_capacity(G *g){
-	_Flow_and_capacity *fc,fcR;
+static void _initialize_flow_capacity(G *g){
+	_E_attr *fc;
 	for (int u=0;u<g->n;u++){
 		ListNode *ne = g->v_adj[u]->head;
 		while (ne){
 			G_e *edge =(G_e *)(ne->data);
-			fc = (_Flow_and_capacity *)edge->data;
+			fc = (_E_attr *)edge->data;
 			if (fc ==0){
-				fc = (_Flow_and_capacity *)malloc(sizeof(_Flow_and_capacity));
+				fc = (_E_attr *)malloc(sizeof(_E_attr));
 				fc->f = 0;
 				fc->c = edge->weight;
 
@@ -761,8 +768,8 @@ static void _initialize_graph_flow_capacity(G *g){
 			fc->reverse = edgeR;
 
 			if (edgeR->data ==0){
-				edgeR->data = malloc(sizeof(_Flow_and_capacity));
-				_Flow_and_capacity *fcR = (_Flow_and_capacity *)(edgeR->data);
+				edgeR->data = malloc(sizeof(_E_attr));
+				_E_attr *fcR = (_E_attr *)(edgeR->data);
 				fcR->f = 0;
 				fcR->c = edgeR->weight;
 				fcR->reverse = edge;
@@ -773,7 +780,7 @@ static void _initialize_graph_flow_capacity(G *g){
 	}
 }
 
-static void _finalize_graph_flow_capacity(G *g){
+static void _finalize_flow_capacity(G *g){
 	for (int u=0;u<g->n;u++){
 		ListNode *ne = g->v_adj[u]->head;
 		while (ne){
@@ -787,30 +794,30 @@ static void _finalize_graph_flow_capacity(G *g){
 }
 
 //for debug
-static void  _chk_g(G *g){
-	
+static void  _chk_e(G *g){
+
 	for (int u=0;u<g->n;u++){
 		ListNode *ne = g->v_adj[u]->head;
 		while (ne){
 			G_e *edge =(G_e *)(ne->data);
-			_Flow_and_capacity *f = (_Flow_and_capacity *) edge->data;
+			_E_attr *f = (_E_attr *) edge->data;
 
-			printf("(%d,%d)\tweight:%f,\tflow:%f,\tcapacity:%f\n",edge->iBegin,edge->iEnd,edge->weight,f->f,f->c);
-			
+			printf("(%s,%s)\tweight:%f,\tflow:%f,\tcapacity:%f\n",g->v[edge->iBegin].name,g->v[edge->iEnd].name,edge->weight,f->f,f->c);
+
 			ne = ne->next;
 		}
 
 	}
 }
 
-//the result maximum flow restored in the edge.data which point to a float address.
+//the result maximum flow is restored in the edge.data which point to a float address.
 void Ford_Fulkerson(G *g,int s,int t,F_find_augument_path fap){
 	G *g_c =newG(g->n);
 	_copy_graph(g,g_c);
-	_initialize_graph_flow_capacity(g_c);
+	_initialize_flow_capacity(g_c);
 
 	//_chk_g(g_c);
-	
+
 	List *path =newList();
 	while ( fap(g_c,s,t,path) ){
         //print path;
@@ -819,7 +826,7 @@ void Ford_Fulkerson(G *g,int s,int t,F_find_augument_path fap){
 		ListNode *node =path->head;
 		while(node){
 			G_e *edge = (G_e *) node->data;
-			_Flow_and_capacity *f = (_Flow_and_capacity *) edge->data;
+			_E_attr *f = (_E_attr *) edge->data;
 			if ( f->c < cf )
 				cf = f->c;
             //printf("(%d->%d)",edge->iBegin,edge->iEnd);
@@ -831,12 +838,12 @@ void Ford_Fulkerson(G *g,int s,int t,F_find_augument_path fap){
 		node =path->head;
 		while(node){
 			G_e *edge = (G_e *) node->data;
-			_Flow_and_capacity *fc = (_Flow_and_capacity *) edge->data;
+			_E_attr *fc = (_E_attr *) edge->data;
 			fc->f = fc->f + cf;
 			fc->c = fc->c - fc->f;
 
 			G_e *edgeR = fc->reverse;
-			_Flow_and_capacity *fcR = (_Flow_and_capacity *) edgeR->data;
+			_E_attr *fcR = (_E_attr *) edgeR->data;
 			fcR->f = - fc->f;
 			fcR->c =fcR->c + fc->f;
 
@@ -844,7 +851,7 @@ void Ford_Fulkerson(G *g,int s,int t,F_find_augument_path fap){
 		}
 	}
 	freeList(path,0);
-	
+
 	//copy maximum flow from g_c to original graph g;
 	for (int u=0;u<g->n;u++){
 		ListNode *ne = g->v_adj[u]->head;
@@ -853,7 +860,7 @@ void Ford_Fulkerson(G *g,int s,int t,F_find_augument_path fap){
 			int v = edge->iEnd;
 			float *mf =(float *)malloc(sizeof(float));
 			G_e *es =_locate_edge(g_c,u,v);
-			_Flow_and_capacity *fcs = es->data;
+			_E_attr *fcs = es->data;
 			*mf = fcs->f;
 			edge->data = mf;
 
@@ -862,7 +869,7 @@ void Ford_Fulkerson(G *g,int s,int t,F_find_augument_path fap){
 
 	}
 
-	_finalize_graph_flow_capacity(g_c);
+	_finalize_flow_capacity(g_c);
 	freeG(g_c);
 }
 
@@ -884,7 +891,7 @@ static int _BFS_for_Edmond_Karp(G *g,int s,int t,List *path){
 
 	color[s] = GRAY;
 	d[s] =0;
-	Queue *q =newQueue(100);
+	Queue *q =newQueue();
 	enqueue(q,(PData)s);
 	while (!queue_is_empty(q)){
 		int u =(int)dequeue(q);
@@ -893,7 +900,7 @@ static int _BFS_for_Edmond_Karp(G *g,int s,int t,List *path){
 		n=g->v_adj[u]->head;
 		while (n){
 			e=(G_e *)(n->data);
-			_Flow_and_capacity *fc = (_Flow_and_capacity *) e->data;
+			_E_attr *fc = (_E_attr *) e->data;
 			int v = e->iEnd;
 			if( fc->c > 0 ){   //this part is different from the original BFS
 				if(color[v] == WHITE){
@@ -944,3 +951,337 @@ void free_graph_flow_data(G *g){
 
 	}
 }
+
+//following code is for push-relabel method.
+typedef struct{
+	int e;
+	int h;
+	List *neighbor;//admissable adjacent edges,each node pointer to an adjacent edge
+	ListNode * nc;//current position on neighbor list
+} _V_attr;
+
+//parameter is NOT a pointer
+#define _attr_e(v) ((_V_attr *)((v).data))->e
+#define _attr_h(v) ((_V_attr *)((v).data))->h
+#define _attr_n(v) (((_V_attr *)((v).data))->neighbor)
+#define _attr_nc(v) (((_V_attr *)((v).data))->nc)
+
+//for debug
+static void  _chk_v(G *g){
+    G_e *e;
+	for (int u=0;u<g->n;u++){
+		printf("%s: \te: %d,\th: %d, \tn:[",g->v[u].name,_attr_e(g->v[u]),_attr_h(g->v[u]));
+		ListNode *node = _attr_n(g->v[u])->head;
+		while (node){
+			e =_edge_in_node(node);
+			printf("%d,",e->iEnd);
+			node =node->next;
+		}
+		int ncv = -1;
+        node = _attr_nc(g->v[u]);
+		if (node){
+            e =  _edge_in_node(node);
+            if( e )
+                ncv = e->iEnd;
+		}
+
+		printf("] \tnc: %d",ncv);
+		printf("\n");
+	}
+}
+//for debug
+static void _chk_g(G *g){
+	_chk_v(g);
+	_chk_e(g);
+}
+
+
+static void _initialize_preflow(G *g,int s, int t){
+	_initialize_flow_capacity(g);
+	for (int i=0;i<g->n;i++){
+		_V_attr *va =  (_V_attr *)malloc(sizeof(_V_attr));
+		va->h =0;
+		va->e =0;
+		va->neighbor =newList();
+		va->nc = 0;
+		g->v[i].data = va;
+	}
+	//g->data = newQueue();
+
+
+	_attr_h(g->v[s]) = g->n;
+
+	ListNode *n;
+	n=g->v_adj[s]->head;
+	while (n){
+		G_e *e=(G_e *)(n->data);
+		int u = e->iEnd;
+		float c =  _attr_c(e);
+		_attr_f(e) = c;
+		_attr_c(e) = 0;
+		_attr_f(_attr_r(e)) = -c;
+		_attr_c(_attr_r(e)) += c;
+
+		_attr_e(g->v[u]) = c;
+
+		_attr_e(g->v[s]) -= c;
+		n=n->next;
+	}
+}
+
+
+static void _finalize_preflow(G *g){
+	//freeQueue((Queue *) g->data,0);
+	for (int i=0;i<g->n;i++){
+		freeList(_attr_n(g->v[i]),0);
+		free(g->v[i].data);
+	}
+	_finalize_flow_capacity(g);
+}
+
+//return the latest e(u)
+static int _push(G *g,G_e * edge){
+	int u = edge->iBegin;
+	int v = edge->iEnd;
+	_V_attr *va_u = (_V_attr *) g->v[u].data;
+	_E_attr *ea_e = (_E_attr *) edge->data;
+	float e = va_u->e;
+	float cf = ea_e->c;
+	float df = e>cf ? cf: e;
+	ea_e->f += df;
+	ea_e->c -= df;
+
+	G_e *er = _attr_r(edge);
+	_attr_f(er) = - ea_e->f;
+	_attr_c(er) += df;
+
+	_attr_e( g->v[u] ) -= df;
+	_attr_e( g->v[v] ) += df;
+    int ee = _attr_e( g->v[u] );
+	return _attr_e( g->v[u] );
+}
+
+static void _relabel(G *g,int u){
+	int min_hv = 2*g->n+1;
+	int v,hv;
+	float cv;
+//get min_hv
+	ListNode *n;
+	n=g->v_adj[u]->head;
+	G_e *e;
+	while (n){
+		e = _edge_in_node( n );
+        v =  e->iEnd;
+        cv =_attr_c(e);
+		if ( cv>0 ){
+            hv = _attr_h(g->v[v]);
+            min_hv = hv < min_hv? hv:min_hv;
+		}
+		n=n->next;
+	}
+//end getting min_hv
+//update height of u
+	_V_attr *va_u  =(_V_attr *) g->v[u].data;
+	va_u->h = min_hv + 1;
+//build neighbor list of u
+	list_clear(va_u->neighbor,0);
+	n = g->v_adj[u]->head;
+	while (n){
+		e = _edge_in_node( n );
+		v =  e->iEnd;
+		hv = _attr_h(g->v[v]);
+		cv = _attr_c(e);
+		if (hv == min_hv && cv > 0)
+			list_append(va_u->neighbor,e);
+		n=n->next;
+	}
+}
+
+//for debug
+void _print_list(List *l){
+	printf("[ ");
+	ListNode *n = l->head;
+	while (n){
+		printf("%d,",(int) n->data);
+		n = n->next;
+	}
+	printf(" ]\n");
+}
+
+
+//this function will alter the inner structure of g.
+//so it should be run on a copy of original G.
+static void _generic_push_relabel(G *g,int s,int t){
+	
+	//_chk_g(g);
+
+	Stack *sk= newStack();
+	for (int i=0;i<g->n;i++){
+		if (_attr_e(g->v[i]) > 0 )
+			push(sk,(PData)i);
+	}
+
+	while( !stack_is_empty(sk) ){
+		int u =(int) pop(sk);
+		
+		//printf("\nafter pop %d and before process\n",u);
+		//_print_list(sk);
+		//_chk_g(g);
+		
+		G_e* ae = 0;
+		ListNode *h = _attr_n(g->v[u])->head;
+		if (h){
+			ae = _edge_in_node(h);
+
+			int v = ae->iEnd;
+			int cv = _attr_c(ae);
+			int hv = _attr_h(g->v[v]);
+			int hu = _attr_h(g->v[u]);
+
+			if( cv>0 && hu == hv+1 ){
+				int ev =_attr_e(g->v[v]);
+				int eu = _push(g,ae);
+				//printf("after push u:%d v:%d,eu:%d",u,v,eu);
+				if (ev == 0 && v !=s && v != t)
+					push(sk,(PData)v);
+				
+				if (eu >0)
+					push(sk,(PData)u);
+			}
+			else{
+				_relabel(g,u);
+				push(sk,(PData)u);
+			}
+				
+		}
+		else{
+			_relabel(g,u);
+			push(sk,(PData)u);
+		}
+		//printf("\nafter pop %d and after process\n",u);
+		//_print_list(sk);
+		//_chk_g(g);
+	}
+	freeStack(sk,0);
+}
+
+void generic_push_relabel(G *g,int s,int t){
+	G *g_c =newG(g->n);
+	_copy_graph(g,g_c);
+
+	_initialize_preflow(g_c,s,t);
+	_generic_push_relabel(g_c,s,t);
+
+	//copy maximum flow from g_c to original graph g;
+	for (int u=0;u<g->n;u++){
+		ListNode *ne = g->v_adj[u]->head;
+		while (ne){
+			G_e *edge =(G_e *)(ne->data);
+			int v = edge->iEnd;
+			float *mf =(float *)malloc(sizeof(float));
+			G_e *es =_locate_edge(g_c,u,v);
+			_E_attr *fcs = es->data;
+			*mf = fcs->f;
+			edge->data = mf;
+
+			ne = ne->next;
+		}
+
+	}
+	_finalize_flow_capacity(g_c);
+	freeG(g_c);
+}
+
+
+static void _discharge(G *g,int u){
+ 	while(_attr_e(g->v[u]) >0){
+        int eu = _attr_e(g->v[u]);
+		ListNode *cur_node =  _attr_nc(g->v[u]);
+		if (cur_node == NULL){
+			_relabel(g,u);
+			_attr_nc(g->v[u]) = _attr_n(g->v[u])->head;
+			continue;
+		}
+		else {
+			G_e * edge_uv = _edge_in_node(cur_node);
+			int v = edge_uv->iEnd;
+			int cv = _attr_c(edge_uv);
+			int hv = _attr_h(g->v[v]);
+			int hu = _attr_h(g->v[u]);
+
+			if( cv>0 && hu == hv+1 ){
+				_push(g,edge_uv);
+				continue;
+			}
+		}
+		_attr_nc(g->v[u]) = _attr_nc(g->v[u])->next;
+
+	}
+}
+
+void _relabel_to_front(G *g,int s,int t){
+	//_chk_g(g);
+	List *l =newList();
+	for (int i=0;i<g->n;i++){
+		if (i != s && i != t){
+			list_append(l,(PData)i);
+			_attr_nc(g->v[i]) = _attr_n(g->v[i])->head;
+		}
+
+	}
+	ListNode *ln = l->head;
+	while(ln){
+		int u = (int) ln->data;
+		int h_old = _attr_h(g->v[u]);
+		//printf("before discharge\n");
+		//_chk_g(g);
+		_discharge(g,u);
+		//printf("after discharge\n");
+		//_chk_g(g);
+		if (_attr_h(g->v[u]) > h_old){
+		//move ln to the front of the list
+			list_delete(l,ln);
+			list_prepend(l,(PData)u);
+			ln = l->head;
+		}
+		ln = ln->next;
+	}
+
+	freeList(l,0);
+}
+
+void relabel_to_front(G *g,int s,int t){
+	G *g_c =newG(g->n);
+	_copy_graph(g,g_c);
+	_initialize_preflow(g_c,s,t);
+	
+	_relabel_to_front(g_c,s,t);
+	
+	//copy maximum flow from g_c to original graph g;
+	for (int u=0;u<g->n;u++){
+		ListNode *ne = g->v_adj[u]->head;
+		while (ne){
+			G_e *edge =(G_e *)(ne->data);
+			int v = edge->iEnd;
+			float *mf =(float *)malloc(sizeof(float));
+			G_e *es =_locate_edge(g_c,u,v);
+			_E_attr *fcs = es->data;
+			*mf = fcs->f;
+			edge->data = mf;
+
+			ne = ne->next;
+		}
+
+	}
+	_finalize_preflow(g_c);
+	freeG(g_c);
+}
+
+#undef _edge_in_node
+#undef _attr_e
+#undef _attr_h
+#undef _attr_n
+
+#undef _attr_f
+#undef _attr_c
+#undef _attr_r

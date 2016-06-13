@@ -551,10 +551,107 @@ static void test_Edmonds_Karp(){
 
 }
 
+static void test_generic_push_relabel(){
+	G *g =newG(6);
+	assignVertex(g,0,"s");
+	assignVertex(g,1,"v1");
+	assignVertex(g,2,"v2");
+	assignVertex(g,3,"v3");
+	assignVertex(g,4,"v4");
+	assignVertex(g,5,"t");
+
+	addEdge(g,0,1,16);
+	addEdge(g,0,2,13);
+
+	addEdge(g,1,2,10);
+	addEdge(g,1,3,12);
+
+	addEdge(g,2,1,4);
+	addEdge(g,2,4,14);
+
+	addEdge(g,3,2,9);
+	addEdge(g,3,5,20);
+
+	addEdge(g,4,3,7);
+	addEdge(g,4,5,4);
+
+
+	generic_push_relabel(g,0,5);
+
+	//print the maximum flow
+	printf("\nMaximum flow: ");
+	for (int u=0;u<g->n;u++){
+		ListNode *ne = g->v_adj[u]->head;
+		while (ne){
+			G_e *edge =(G_e *)(ne->data);
+			int v = edge->iEnd;
+			float flow = * (float *) edge->data;
+			printf("\n(%s,%s): \t%f  ",g->v[u].name,g->v[v].name,flow);
+			ne = ne->next;
+		}
+
+	}
+	printf("\n");
+
+	free_graph_flow_data(g);
+	freeG(g);
+
+}
+
+
+static void test_relabel_to_front(){
+	G *g =newG(6);
+	assignVertex(g,0,"s");
+	assignVertex(g,1,"v1");
+	assignVertex(g,2,"v2");
+	assignVertex(g,3,"v3");
+	assignVertex(g,4,"v4");
+	assignVertex(g,5,"t");
+
+	addEdge(g,0,1,16);
+	addEdge(g,0,2,13);
+
+	addEdge(g,1,2,10);
+	addEdge(g,1,3,12);
+
+	addEdge(g,2,1,4);
+	addEdge(g,2,4,14);
+
+	addEdge(g,3,2,9);
+	addEdge(g,3,5,20);
+
+	addEdge(g,4,3,7);
+	addEdge(g,4,5,4);
+
+
+	relabel_to_front(g,0,5);
+
+	//print the maximum flow
+	printf("\nMaximum flow: ");
+	for (int u=0;u<g->n;u++){
+		ListNode *ne = g->v_adj[u]->head;
+		while (ne){
+			G_e *edge =(G_e *)(ne->data);
+			int v = edge->iEnd;
+			float flow = * (float *) edge->data;
+			printf("\n(%s,%s): \t%f  ",g->v[u].name,g->v[v].name,flow);
+			ne = ne->next;
+		}
+
+	}
+	printf("\n");
+
+	free_graph_flow_data(g);
+	freeG(g);
+
+}
 
 
 int main(){
-	test_Edmonds_Karp();
+	
+	//test_relabel_to_front();
+	test_generic_push_relabel();
+	//test_Edmonds_Karp();
 	//test_Johnson();
 	//test_Dijkstra();
 	//test_dag_shortest_path();
