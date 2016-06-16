@@ -17,10 +17,13 @@ struct list_node{
 typedef struct list_node ListNode;
 
 typedef struct {
+	int n;
 	ListNode *head;
 	ListNode *tail;
 	//CompareFunction fCompare;
 } List;
+
+typedef int (*FListNode)(ListNode *n,PData ctx);
 
 List *newList();
 void freeList(List *l,int bFreeTarget);
@@ -29,9 +32,10 @@ ListNode * list_search(List *l,PData matchKey,CompareFunction fCompare);
 void list_prepend(List *l,PData aItem);//new item became new head;
 void list_append(List *l,PData aItem);//new item became new tail;
 int list_delete(List *l,ListNode *x);//won't free the node deleted 
-int list_delete_by_data(List *l,PData matchKey,CompareFunction fCompare);//free the node containing target key.
+int list_delete_by_data(List *l,PData matchKey,CompareFunction fCompare);//won't free the node delete.
 void list_clear(List *l,int bFreeTarget);
 int list_is_empty(List *l);
+void list_foreach(List *l,FListNode f,PData ctx);
 
 
 //Stack ,Queue,List, HashTable should be used by pointer (newXXX).
@@ -83,13 +87,6 @@ typedef struct binaryTreeNode{
 	struct binaryTreeNode *right;
 } BinaryTreeNode;
  //struct binaryTreeNode BinaryTreeNode;
-
-//tree******************************************
-typedef struct treeNode{
-	PData key;
-	struct TreeNode *leftChild;
-	struct TreeNode *rightSibling;
-} TreeNode;
 
 //Hash table *********************************************
 typedef int (*HashFunction)(PData key);

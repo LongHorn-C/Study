@@ -72,6 +72,22 @@ void freeG(G *g){
 	free(g);
 }
 
+void g_foreach_vertex(G *g,FVertex f,PData ctx){
+	for (int i=0;i<g->n;i++)
+		f(&(g->v[i]),ctx);	
+	
+}
+void g_foreach_edge(G *g,FEdge f,PData ctx){
+	for (int i=0;i<g->n;i++){
+	ListNode *n = g->v_adj[i]->head;
+		while(n){
+			f(_edge_in_node(n),ctx);
+			n = n->next;
+		}
+	}
+	
+}
+
 typedef enum {WHITE,GRAY,BLACK} Color;
 
 void BFS(G *g,int s,int *d,int *pi){
@@ -1241,6 +1257,7 @@ void _relabel_to_front(G *g,int s,int t){
 		if (_attr_h(g->v[u]) > h_old){
 		//move ln to the front of the list
 			list_delete(l,ln);
+			free(ln);
 			list_prepend(l,(PData)u);
 			ln = l->head;
 		}

@@ -1,5 +1,5 @@
-﻿#ifndef __GRAPH_H
-#define __GRAPH_H
+﻿#ifndef __CLH_GRAPH_H
+#define __CLH_GRAPH_H
 
 #include <stdio.h>
 #include "ds.h"
@@ -30,12 +30,19 @@ typedef struct{
 	PData data; //for extension use
 } G;
 
+typedef int (*FVertex)(G_v *v,PData ctx);
+typedef int (*FEdge)(G_e *e,PData ctx);
+
+
 G *newG(int n);
 void freeG(G *g);
 void assignVertex(G *g,int i,char *name);
 G_e * addEdge(G* g,int u,int v,float weight);
 G_e * addEdge_NoDirection(G* g,int u,int v,float weight);
 //enum v_color {white,gray,black}; 
+void g_foreach_vertex(G *g,FVertex f,PData ctx);
+void g_foreach_edge(G *g,FEdge f,PData ctx);
+
 
 void BFS(G *g,int s,int *d,int *pi);
 void print_path(G *g,int s,int v,int *pi);

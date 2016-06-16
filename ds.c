@@ -118,22 +118,13 @@ List *newList(){
 	List * x=(List *)malloc(sizeof(List));
 	x->head = NULL;
 	x->tail = NULL;
+	x->n = 0;
 	return x;
 }
 
 
 void freeList(List *l,int bFreeTarget){
-	if (!l)
-		return;
-	ListNode *t, *x;
-	x = l->head;
-	while (x != NULL){
-		t= x->next;
-		if (bFreeTarget)
-			free(x->data);
-		free(x);
-		x = t;
-	}
+	list_clear(l,bFreeTarget);
 	free(l);
 }
 
@@ -151,6 +142,7 @@ void list_clear(List *l,int bFreeTarget){
 	}
 	l->head = 0;
 	l->tail = 0;
+	l->n =0;
 }
 
 
@@ -164,6 +156,7 @@ static void _list_prepend(List *l,ListNode *x){
 	
 	if(l->tail ==NULL)
 		l->tail = x;
+	l->n++;
 }
 
 
@@ -177,6 +170,7 @@ static void _list_append(List *l,ListNode *x){
 	
 	if(l->head ==NULL)
 		l->head = x;
+	l->n++;
 }
 
 
@@ -191,6 +185,7 @@ int list_delete(List *l,ListNode *x){
 		x->next->prev = x->prev;
 	else//no prev means that x  is the tail;
 		l->tail = x->prev;
+	l->n--;		
 	return 1;
 }
 
@@ -209,13 +204,22 @@ void list_append(List *l,PData aItem){
 int list_delete_by_data(List *l,PData matchKey,CompareFunction fCompare){
 	ListNode *x = list_search(l,matchKey,fCompare);
 	int r = list_delete(l,x);
-	free(x);
+	//free(x);
 	return r;
 }
 
 int list_is_empty(List *l){
 	return l->head == 0;
 }
+
+void list_foreach(List *l,FListNode f,PData ctx){
+	ListNode *node = l->head;
+	while (node){
+		f(node,ctx);
+		node= node->next;
+	}
+}
+
 
 //Stack and Queue
 
@@ -251,7 +255,9 @@ PData pop(Stack *sp){
 	}
 	ListNode *r = sp->tail; 
 	list_delete(sp,r);
-	return r->data;
+	PData result =r->data;
+	free(r);
+	return result;
 }
 
 int queue_is_empty(Queue *qp){

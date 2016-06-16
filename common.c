@@ -30,6 +30,7 @@ int fCompare(PData a,PData b){
 }
 
 int iCompare(PData a,PData b){
+	printf(" iCom(%d ,%d)\n",(int)a,(int)b);
 	return i_v_compare(*((int *)a) , *((int *)b));
 }
 
