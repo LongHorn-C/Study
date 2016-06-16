@@ -15,13 +15,13 @@ typedef struct{
 	//F_bt2 is_answer;
 	F_bt1 get_first_child; //return 0 :not found ;1: found. new child.data stored in para a_i
 	F_bt1 get_next_sibling; //return 0 :not found ;1: found. new child.data stored in para a_i
-	F_bt1 on_append_tail;
-	F_bt1 on_delete_tail;
+	//F_bt1 on_append_tail;
+	//F_bt1 on_delete_tail;
 } Bt_callbacks;
 
 
-int back_track_to_get_next(List *path,PData a_i,F_bt1 get_next_sibling,PData ctx);
-void back_track(List *ans_pre_part,PData *ans_incr,Bt_callbacks *cb,PData ctx);
+int back_track_to_get_next(List *path,PData a_i,int ans_size,Bt_callbacks *cb,PData ctx);
+int back_track(List *ans_pre_part,PData ans_incr,int ans_size,Bt_callbacks *cb,PData ctx);
 
 //for convienent use. callback->.on_append.. =  on_append_.copy ... free.
 int on_append_tail__copy(List *path,PData a_i,int size,PData ctx);
