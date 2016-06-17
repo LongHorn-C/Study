@@ -12,7 +12,7 @@ TreeNode *newTreeNode(){
 	x->last_child = NULL;
 	
 	x->data = NULL;
-	
+	x->child_count = 0;
 	return x;
 }
 
@@ -56,6 +56,7 @@ void tree_clear(TreeNode *l,int bFreeTarget){
 	}
 	x->first_child = NULL;
 	x->last_child = NULL;
+	x->child_count = 0;
 }
 
 
@@ -143,4 +144,19 @@ void tree_foreach(TreeNode *l,FTreeNode f,PData ctx){
 		tree_foreach(x,f,ctx);
 		x = x->next;
 	}
+}
+
+Tree *newTree(TreeNode *tn){
+	Tree *x =malloc(sizeof(Tree));
+	//x->n = 1;
+	x->root = tn;
+	x->cursor =NULL;
+	x->data =NULL;
+	return x;	
+}
+
+void freeTree(Tree *t,int bFreeTarget){
+	if (t->root)
+		freeTreeNode(t->root,bFreeTarget);
+	free(t);
 }

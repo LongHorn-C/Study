@@ -21,6 +21,8 @@ typedef struct {
 	ListNode *head;
 	ListNode *tail;
 	//CompareFunction fCompare;
+	ListNode *cursor;
+	PData data;
 } List;
 
 typedef int (*FListNode)(ListNode *n,PData ctx);

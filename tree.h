@@ -18,6 +18,17 @@ typedef struct tree_node TreeNode;
 
 typedef int (*FTreeNode)(TreeNode *n,PData ctx);
 
+
+typedef struct tree{
+	TreeNode *root;
+	TreeNode *cursor;
+	PData data;
+	//int n; // total node count
+}Tree;
+
+Tree *newTree();
+void freeTree(Tree *t,int bFreeTarget);
+
 TreeNode *newTreeNode();
 void freeTreeNode(TreeNode *tn,int bFreeTarget);
 
