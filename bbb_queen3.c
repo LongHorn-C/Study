@@ -1,6 +1,6 @@
 ﻿//this file is for back_track and branch-and-bound method.
 //for queen problem.
-//answer_list.node.data is a pointer to struct An.
+//answer_list.node.data is a pointer to struct _Answer_step.
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,7 +12,7 @@
 typedef struct{
 	int r;
 	int c;
-}An;
+}_Answer_step;
 
 
 static int _pass_1(int r1,int c1,int r2,int c2){
@@ -27,35 +27,35 @@ static int _pass_1(int r1,int c1,int r2,int c2){
 }
 
 static int _pass(Tree *path,PData a_i,PData ctx){
-	int r1,r2,c1,c2;
-	An *vn,*vi;
-	vi = (An *)a_i;
-	r2=vi->r;
-	c2=vi->c;
+	int r_i,rp,c_i,cp;
+	_Answer_step *vn,*vi;
+	vi = (_Answer_step *)a_i;
+	r_i=vi->r;
+	c_i=vi->c;
 
 	int size =(int)ctx;
-	if ( r2>=size || c2>=size)
+	if ( r_i>=size || c_i>=size)
 		return 0;
 
 	TreeNode *n= path->cursor;
 	while(n && n!= path->root){
-		An *vn=(An *) n->data;
-		r1 = vn->r;
-		c1 = vn->c;
-		if( !_pass_1(r1,c1,r2,c2 ))
+		_Answer_step *vn=(_Answer_step *) n->data;
+		rp = vn->r;
+		cp = vn->c;
+		if( !_pass_1(r_i,c_i,rp,cp ))
 			return 0;
 		n= n->parent;
 	}
 
-	if ( r2 >=  size-1 )
+	if ( r_i >=  size-1 )
 		return 2;
 
 	return 1;
 }
 
 static int _get_first_child(Tree *path,PData a_i,PData ctx){
-	An *vi = (An *)a_i;
-	An *p = (An *)(path->cursor->data);
+	_Answer_step *vi = (_Answer_step *)a_i;
+	_Answer_step *p = (_Answer_step *)(path->cursor->data);
 	vi->r = p->r + 1;
 	vi->c = 0;
 
@@ -65,7 +65,7 @@ static int _get_first_child(Tree *path,PData a_i,PData ctx){
 }
 
 static int _get_next_sibling(Tree *path,PData a_i,PData ctx){
-	An *vi = (An *)a_i;
+	_Answer_step *vi = (_Answer_step *)a_i;
 	vi->c ++;
 
 	int n = (int)ctx;
@@ -75,7 +75,7 @@ static int _get_next_sibling(Tree *path,PData a_i,PData ctx){
 
 
 static int _print_ans_node(TreeNode *n,PData ctx){
-	An *a = n->data;
+	_Answer_step *a = n->data;
 	if (a)
 		printf("[%d, %d] , ",a->r,a->c);
 }
@@ -85,18 +85,17 @@ int queen(int n){
 		cb.pass =_pass;
 		cb.get_first_child = _get_first_child;
 		cb.get_next_sibling = _get_next_sibling;
-		cb.on_append_tail = NULL;
-		cb.on_delete_tail = NULL;
 	TreeNode *rn =newTreeNode();
 	Tree *sst =newTree(rn);
 		sst->cursor = rn;
-	An a;
+	_Answer_step a;
 		a.r = 0;
 		a.c = 0;
 
-	if (back_track(sst,&a,sizeof(An),&cb,(PData)n)){
+	if (back_track(sst,&a,sizeof(_Answer_step),&cb,(PData)n)){
 		printf("solution found: \n\t");
-		tree_foreach(sst->root,_print_ans_node,(PData)n);
+		tree_foreach(sst->root,(PData)n,_print_ans_node);
+		printf("\nend print solution \n");
 	}
 
 	freeTree(sst,1);

@@ -38,6 +38,6 @@ TreeNode *tree_append_child(TreeNode *l,PData aItem);//new item became new tail;
 int tree_delete(TreeNode *x);//detache node from its neighbors,won't free the node deleted 
 void tree_clear(TreeNode *tn,int bFreeTarget);
 
-void tree_foreach(TreeNode *tn,FTreeNode f,PData ctx);
+void tree_foreach(TreeNode *tn,PData ctx,FTreeNode f);
 
 #endif

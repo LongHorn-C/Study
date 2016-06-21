@@ -1,6 +1,6 @@
 ﻿//this file is for back_track and branch-and-bound method.
 //for Hamiltonian circuit problem.
-//answer_list.node.data is a pointer to G.v_adj[i].ListNode,
+//answer_list.node.data is a pointer to _Answer_step *
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,12 +8,19 @@
 #include "g.h"
 #include "common.h"
 
+typedef struct {
+	int i;
+	ListNode *edge_node;
+}_Answer_step;  //type of  AnswerList -> Node->data.
+
+#define _ad_of(p) ((_Answer_step *)p)
+
 static int _pass(Tree *path,PData a_i,PData ctx){
 	G *g = ctx;
-	ListNode *edge_node = a_i;
+	ListNode *edge_node = _ad_of(a_i)->edge_node;
 	G_e *edge = edge_node->data;
 	int v = edge->iEnd;
-	int v_count =(int)path->data;
+	int v_count = _ad_of(a_i)->i - 1;
 	if( v_count == g->n ){
 		if (0 ==v )
 			return 2;
@@ -25,7 +32,7 @@ static int _pass(Tree *path,PData a_i,PData ctx){
 	else{
 		TreeNode *n= path->cursor;
 		while(n && n!= path->root){
-			edge_node = n->data;
+			edge_node =_ad_of( n->data)->edge_node;
 			edge = edge_node->data;
 			int vp = edge->iEnd;
 			if (vp == v)
@@ -37,6 +44,7 @@ static int _pass(Tree *path,PData a_i,PData ctx){
 	return 1;
 }
 
+/*
 static int _on_append_tail(Tree *path,PData a_i,PData ctx){;
 	path->data ++;
 	return 1;
@@ -46,31 +54,34 @@ static int _on_delete_tail(Tree *path,PData a_i,PData ctx){;
 	path->data --;
 	return 1;
 }
-
+*/
 
 static int _get_first_child(Tree *path,PData a_i,PData ctx){
 	G *g = ctx;
 
 	TreeNode *ans_tail_node = path->cursor;
-	ListNode *node = ans_tail_node->data;
+	ListNode *node = _ad_of(ans_tail_node->data)->edge_node;
 	G_e *edge = node->data;
 	int u = edge->iEnd;
 
 	node = g->v_adj[u]->head;
 
-	if (node)
-		*(ListNode *)a_i = *node;
-
+	if (node){
+		//*(ListNode *)a_i = *node;
+		 _ad_of(a_i)->edge_node = node;
+		_ad_of(a_i)->i ++;
+	}
 	return  (node != NULL);
 
 }
 
 static int _get_next_sibling(Tree *path,PData a_i,PData ctx){
-	ListNode * node = a_i;
+	ListNode * node = _ad_of(a_i)->edge_node;
 	node = node->next;
 
 	if (node)
-		*(ListNode *)a_i = *node;
+		//*(ListNode *)a_i = *node;
+		_ad_of(a_i)->edge_node = node;
 
 	return node != NULL;
 }
@@ -78,7 +89,7 @@ static int _get_next_sibling(Tree *path,PData a_i,PData ctx){
 static int _print_ans_node(TreeNode *n,PData ctx){
 	G *g= ctx;
 	if (n->data){
-		ListNode *edge_node = (ListNode *)n->data;
+		ListNode *edge_node = _ad_of(n->data)->edge_node;
 		G_e *edge= (G_e *)edge_node->data;
 		printf("%s -> ",g->v[edge->iEnd].name);
 	}
@@ -91,15 +102,13 @@ int Hamilton(G *g){
 		cb.pass =_pass;
 		cb.get_first_child =_get_first_child;
 		cb.get_next_sibling =_get_next_sibling;
-		cb.on_append_tail = _on_append_tail;
-		cb.on_delete_tail = _on_delete_tail;
 	//}
 
 	TreeNode *rn =newTreeNode();
     Tree * sst = newTree(rn);
-	sst->data = (PData)0; //count of vertices in state-space-tree.
+	//sst->data = (PData)0; //count of vertices in state-space-tree.
 	sst->cursor = rn;
-	
+
 	ListNode node;
 	//{
 			G_e e;
@@ -110,37 +119,23 @@ int Hamilton(G *g){
 		//}
 		node.data = &e;
 		node.next =NULL;
-/*  or use following code to construct initial state-space-tree
-	TreeNode *rn =newTreeNode();
-    Tree * sst = newTree(rn);
-	sst->data = (PData)0; //count of vertices in state-space-tree.
-	sst->cursor = rn;
-	ListNode *rnode =malloc(sizeof(ListNode));
-	//{
-			G_e e;
-			e.iBegin = 0;
-			e.iEnd = 0;
-			e.weight = 0;
-			e.data = NULL;
-		//}
-		rnode->data = &e;
-		//rnode->next =NULL; don't need this clause.
-	rn->data = rnode;
+	_Answer_step a_i;
+	a_i.i =1;
+	a_i.edge_node = &node;
 
-	ListNode node;
-	node = *(g->v_adj[0]->head);
-
-
-*/
-	if (back_track(sst,&node,sizeof(node),&cb,g)){
+	if (back_track(sst,&a_i,sizeof(node),&cb,g)){
 		printf("solution found: \n\t");
-		tree_foreach(sst->root,_print_ans_node,g);
-		printf("end print solution");
-		
+		tree_foreach(sst->root,g,_print_ans_node);
+	/*	TreeNode * nn= sst->root;
+		while (nn){
+            _print_ans_node(nn,g);
+            nn= nn->first_child;
+		}
+    */
+		printf("\nend print solution\n");
+
 	}
-
 	freeTree(sst,1);
-
 }
 
 int main(){
