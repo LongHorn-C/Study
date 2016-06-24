@@ -19,15 +19,6 @@ typedef struct tree_node TreeNode;
 typedef int (*FTreeNode)(TreeNode *n,PData ctx);
 
 
-typedef struct tree{
-	TreeNode *root;
-	TreeNode *cursor;
-	PData data;
-	//int n; // total node count
-}Tree;
-
-Tree *newTree();
-void freeTree(Tree *t,int bFreeTarget);
 
 TreeNode *newTreeNode();
 void freeTreeNode(TreeNode *tn,int bFreeTarget);
@@ -37,6 +28,17 @@ TreeNode *tree_prepend_child(TreeNode *l,PData aItem);//new item became new head
 TreeNode *tree_append_child(TreeNode *l,PData aItem);//new item became new tail;
 int tree_delete(TreeNode *x);//detache node from its neighbors,won't free the node deleted 
 void tree_clear(TreeNode *tn,int bFreeTarget);
+
+
+typedef struct tree{
+	TreeNode *root;
+	TreeNode *cursor;
+	PData data;
+	//int n; // total node count
+}Tree;
+
+Tree *newTree();
+void freeTree(Tree *t,int bFreeTarget);
 
 void tree_foreach(TreeNode *tn,PData ctx,FTreeNode f);
 

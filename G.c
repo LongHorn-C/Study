@@ -88,6 +88,24 @@ void g_foreach_edge(G *g,FEdge f,PData ctx){
 	
 }
 
+//for debug
+void g_print(G* g){
+	printf("Begin print g\nV:\t");
+	for (int i=0 ;i<g->n;i++){
+		printf("%d:%s\t",i,g->v[i].name);
+	}
+	printf("\nEdges:\n");
+	for (int i=0 ;i<g->n;i++){
+		for (ListNode *n=g->v_adj[i]->head;n;n=n->next){
+			G_e *e =n->data;	
+			printf("[%d->%d:%f]\t",e->iBegin,e->iEnd,e->weight);
+		}
+		printf("\n");
+	}	
+	printf("  end print g\n");
+}
+
+
 typedef enum {WHITE,GRAY,BLACK} Color;
 
 void BFS(G *g,int s,int *d,int *pi){
@@ -507,6 +525,7 @@ void mst_Prim(G *g,int r,int *pi){
 	}
 	//printf("q empty ok\n");
 	free(vv);
+	free(dd);
 }
 
 
@@ -595,7 +614,7 @@ void dag_shortest_paths(G *g,int s,float *d,int *pi){
 
 		ns = ns->next;
 	}
-
+	
 	freeList(topsort,0);
 }
 
@@ -641,6 +660,7 @@ void Dijkstra(G *g,int s,float *d,int *pi/*,List *l*/){
 	}
 
 	free(vv);
+	free(dd);
 }
 
 static void _copy_graph(G *s,G *d){

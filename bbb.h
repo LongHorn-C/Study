@@ -40,10 +40,13 @@ typedef struct{
 	//on_prune
 } Bb_callbacks;
 
-PData bb_get_answer_step(PData sstNodeData);
-int branch_bound(Tree *path,PData ans_incr,int ans_size,Bb_callbacks *cb,PData ctx);
+int branch_bound(Tree *path,PData ans_incr,int ans_size,Bb_callbacks *cb,int bigger_better,PData ctx);
 
-//t means 
+PData bb_get_answer_step(TreeNode *tn);
+int bb_check_bound(Tree *sst,float a_bound);
+float bb_get_optimal(Tree *sst);
+//PData malloc_sst_root_node_data(Tree *sst,PData answer_step,int ans_step_size);
+void free_all_sst_node_data(Tree *sst);
 
 #endif
 

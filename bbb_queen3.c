@@ -1,6 +1,6 @@
 ﻿//this file is for back_track and branch-and-bound method.
 //for queen problem.
-//answer_list.node.data is a pointer to struct _Answer_step.
+//build command: gcc -o q3 bbb_queen3.c bbb.c tree.c ds.c
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -55,10 +55,15 @@ static int _pass(Tree *path,PData a_i,PData ctx){
 
 static int _get_first_child(Tree *path,PData a_i,PData ctx){
 	_Answer_step *vi = (_Answer_step *)a_i;
-	_Answer_step *p = (_Answer_step *)(path->cursor->data);
-	vi->r = p->r + 1;
-	vi->c = 0;
-
+	if (path->cursor == path->root){
+		vi->r =0 ;
+		vi->c =0 ;
+	}
+	else{
+		_Answer_step *p = (_Answer_step *)(path->cursor->data);
+		vi->r = p->r + 1;
+		vi->c = 0;
+	}
 	int n =  (int)ctx;
 
 	return vi->r  < n;
@@ -85,12 +90,8 @@ int queen(int n){
 		cb.pass =_pass;
 		cb.get_first_child = _get_first_child;
 		cb.get_next_sibling = _get_next_sibling;
-	TreeNode *rn =newTreeNode();
-	Tree *sst =newTree(rn);
-		sst->cursor = rn;
+	Tree *sst =newTree();
 	_Answer_step a;
-		a.r = 0;
-		a.c = 0;
 
 	if (back_track(sst,&a,sizeof(_Answer_step),&cb,(PData)n)){
 		printf("solution found: \n\t");

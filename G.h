@@ -43,6 +43,8 @@ G_e * addEdge_NoDirection(G* g,int u,int v,float weight);
 void g_foreach_vertex(G *g,FVertex f,PData ctx);
 void g_foreach_edge(G *g,FEdge f,PData ctx);
 
+//for debug
+void g_print(G* g);
 
 void BFS(G *g,int s,int *d,int *pi);
 void print_path(G *g,int s,int v,int *pi);

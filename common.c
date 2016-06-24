@@ -1,5 +1,6 @@
 ﻿// gcc -o gt g_test.c g.c common.o ds.o heap.o sort.o
-
+//gcc -o hm bbb_hamilton.c bbb.c g.o common.o heap.o ds.c tree.c
+//gcc -o as bbb_assignment.c bbb.c  tree.c ds.c 
 
 
 #include <stdlib.h>

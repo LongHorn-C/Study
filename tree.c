@@ -4,13 +4,13 @@
 
 TreeNode *newTreeNode(){
 	TreeNode * x=(TreeNode *)malloc(sizeof(TreeNode));
-	
+
 	x->parent = NULL;
 	x->prev = NULL;
 	x->next = NULL;
 	x->first_child = NULL;
 	x->last_child = NULL;
-	
+
 	x->data = NULL;
 	x->child_count = 0;
 	return x;
@@ -65,7 +65,7 @@ static TreeNode * _prepend_child(TreeNode *l,TreeNode *x){
 	x->next = l->first_child;
 	if (l->first_child != NULL)
 		l->first_child->prev = x;
-	
+
 	l->first_child = x;
 	x->prev =NULL;
 	if(l->last_child ==NULL)
@@ -79,10 +79,10 @@ static TreeNode * _append_child(TreeNode *l,TreeNode *x){
 	x->prev = l->last_child;
 	if (l->last_child != NULL)
 		l->last_child->next = x;
-	
+
 	l->last_child = x;
 	x->next =NULL;
-	
+
 	if(l->first_child ==NULL)
 		l->first_child = x;
 	l->child_count++;
@@ -97,7 +97,7 @@ int tree_delete(TreeNode *x){
 		x->prev->next = x->next;
 	else{ //no prev means that x  is the head;
 		if (x->parent)
-			x->parent->first_child = x->next;	
+			x->parent->first_child = x->next;
 	}
 
 	if (x->next !=NULL)
@@ -106,7 +106,7 @@ int tree_delete(TreeNode *x){
 		if (x->parent)
 			x->parent->last_child = x->prev;
 	if (x->parent)
-		x->parent->child_count --;	
+		x->parent->child_count --;
 
 	//x->parent = NULL;
 	//x->prev = NULL;
@@ -116,13 +116,14 @@ int tree_delete(TreeNode *x){
 }
 
 TreeNode * tree_prepend_child(TreeNode *l,PData aItem){
-	TreeNode * x=(TreeNode *)malloc(sizeof(TreeNode));
+	TreeNode * x= newTreeNode();
 	x->data = aItem;
 	return _prepend_child(l,x);
 }
 
 TreeNode * tree_append_child(TreeNode *l,PData aItem){
-	TreeNode * x=(TreeNode *)malloc(sizeof(TreeNode));
+	//TreeNode * x=(TreeNode *)malloc(sizeof(TreeNode));
+	TreeNode * x = newTreeNode();
 	x->data = aItem;
 	return _append_child(l,x);
 }
@@ -135,24 +136,40 @@ int tree_delete_by_data(TreeNode *l,PData matchKey,CompareFunction fCompare){
 }
 
 //parent first, child next;
-void tree_foreach(TreeNode *l,FTreeNode f,PData ctx){
+void tree_foreach(TreeNode *l,PData ctx,FTreeNode f){
 	TreeNode *x;
 	f(l,ctx);
-	
+
 	x= l->first_child;
 	while (x){
-		tree_foreach(x,f,ctx);
+		tree_foreach(x,ctx,f);
 		x = x->next;
 	}
 }
 
-Tree *newTree(TreeNode *tn){
+/*
+Tree *_newTree(TreeNode *rn){
 	Tree *x =malloc(sizeof(Tree));
 	//x->n = 1;
-	x->root = tn;
+	x->root = rn;
 	x->cursor =NULL;
 	x->data =NULL;
-	return x;	
+	return x;
+}
+
+Tree *newTree(PData root_data){
+	TreeNode *rn = newTreeNode(root_data);
+	return _newTree(rn);
+}
+*/
+
+Tree *newTree(){
+	Tree *x =malloc(sizeof(Tree));
+	//x->n = 1;
+	x->root = NULL;
+	x->cursor =NULL;
+	x->data =NULL;
+	return x;
 }
 
 void freeTree(Tree *t,int bFreeTarget){
