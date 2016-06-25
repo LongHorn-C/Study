@@ -159,7 +159,8 @@ static int _get_best_bound_node(TreeNode *n,PData ctx){
 }
 
 //to-do: can be implemented by a priority queue.
-//but in most case it can't improve the upper bound of branch-bound-algorithm efficiency.
+//but in most case it can't improve the upper bound of branch-bound-algorithm's efficiency.
+//because _prune_inferior_nodes will cost O(tree_node_count) anyway.
 static  TreeNode  *_get_best_bound(Tree *sst){
 	_Ctx_best ctx;
 	ctx.sst =sst;

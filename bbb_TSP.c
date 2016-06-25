@@ -29,15 +29,29 @@ static G_e *_edge_of_answer_step(_Answer_step *as){
 	return edge;
 }
 
+
+/*
 static float _calc_value(Tree *sst,PData answer_step,PData ctx){
 	G *g =ctx;
 	_Answer_step *si = answer_step;
 	float result = _edge_of_answer_step(si)->weight;
 	for (TreeNode *tn = sst->cursor;tn != sst->root;tn = tn->parent)
 		result += _edge_of_tree_node(tn)->weight;
-
 	return result;
 }
+*/
+
+//time is O(1)
+static float _calc_value(Tree *sst,PData answer_step,PData ctx){
+	_Answer_step *si = answer_step;
+	float result = _edge_of_answer_step(si)->weight;
+	if (sst->cursor != sst->root){
+		_Answer_step *asc =  bb_get_answer_step(sst->cursor);
+		result += asc->value;
+	}
+	return result;
+}
+
 
 
 static int _same_edge(G_e *a,G_e *b){
@@ -49,8 +63,10 @@ static int _same_edge(G_e *a,G_e *b){
 		return 0;
 }
 
-//using Dset bound can be gotten almost in O(v) time for each call.
+//_calc_bound_1 using Dset, bound can be gotten almost in O(v) time for each call.
 //_calc_bound_2 is O(v^2)
+//there is an O(1) method. similiar to bbb_knapsack.c->value -calc method. it will be
+//implemented in _calc_bound_3
 static float _calc_bound_1(Tree *sst,PData answer_step,PData ctx){
 	float result =0,pp=0,pi=0,pr=0,pir=0,p0r=0;
 	G *g =ctx;
@@ -150,7 +166,58 @@ static float _calc_bound_2(Tree *sst,PData answer_step,PData ctx){
 	return (int)(result / 2.0 + 0.5 );
 }
 
+//average time is O(1).
+static float _calc_bound_3(Tree *sst,PData answer_step,PData ctx){
+	G *g =ctx;
+	_Answer_step *si = answer_step;
+	G_e *ei = _edge_of_answer_step(si);
+	ListNode *n;
+	G_e *e1,*em1,*em2;
+	int vi = ei->iEnd;
+	float result =0;
+	result = ei->weight*2;
+	if (sst->cursor == sst->root){
+		for (int i=0;i<g->n;i++){
+			n = g->v_adj[i]->head;
+			em1 = n->data;
+			n = g->v_adj[i]->head->next;
+			em2 =n->data;
+			result += em1->weight +em2->weight;
+		}
+	}
+	else{
+		_Answer_step *asc = bb_get_answer_step(sst->cursor);
+		result += asc->bound *2;
+	}
 
+	int t;
+	if (sst->cursor == sst->root)
+		t =0;
+	else
+		t = _edge_of_tree_node(sst->cursor)->iEnd;
+	n = g->v_adj[t]->head;
+	em1 = n->data;
+	n = g->v_adj[t]->head->next;
+	em2 =n->data;
+	if (_same_edge(ei,em1))
+		result -= em1->weight;
+	else
+		result -= em2->weight;
+
+	t = ei->iEnd;
+	n = g->v_adj[t]->head;
+	em1 = n->data;
+	n = g->v_adj[t]->head->next;
+	em2 =n->data;
+	if (_same_edge(ei,em1))
+		result -= em1->weight;
+	else
+		result -= em2->weight;
+
+	return (int)(result / 2.0 + 0.5 );
+}
+
+//time bound :O(v)
 static int _pass(Tree *sst,PData a_i,PData ctx){
 	G *g = ctx;
 	_Answer_step *si = a_i;
@@ -183,6 +250,7 @@ static int _pass(Tree *sst,PData a_i,PData ctx){
 	return 1;
 }
 
+
 static int _get_first_child(Tree *sst,PData a_i,PData ctx){
 	G *g = ctx;
 	_Answer_step *si = a_i;
@@ -198,35 +266,38 @@ static int _get_first_child(Tree *sst,PData a_i,PData ctx){
 	}
 	ListNode *node = g->v_adj[u]->head;
 	si->edge_node = node;
-	/*if (si->edge_node){
+	//since calc bound is O(1) but _pass is O(v), so calc and check bound before pass
+	if (si->edge_node){
 		si->value = _calc_value(sst,a_i,ctx);
-		si->bound = _calc_bound_1(sst,a_i,ctx);
-	}*/
-	return  (si->edge_node != NULL);
+		si->bound = _calc_bound_3(sst,a_i,ctx);
+	}
+	return  (si->edge_node != NULL) && bb_check_bound(sst,si->bound);
 }
 
 static int _get_next_sibling(Tree *sst,PData a_i,PData ctx){
 	_Answer_step *si = a_i;
 	si->edge_node = si->edge_node->next;
-	/*if (si->edge_node){
+	//since calc bound is O(1) but _pass is O(v), so calc and check bound before pass
+	if (si->edge_node){
 		si->value = _calc_value(sst,a_i,ctx);
-		si->bound = _calc_bound_1(sst,a_i,ctx);
-	}*/
-	return si->edge_node != NULL;
+		si->bound = _calc_bound_3(sst,a_i,ctx);
+	}
+	
+	return (si->edge_node != NULL && bb_check_bound(sst,si->bound));
 }
 
 
 
 static float _get_value(Tree *sst,PData answer_step,PData ctx){
-	//_Answer_step *si = answer_step;
-	//return si->value;
-	return _calc_value(sst,answer_step,ctx);
+	_Answer_step *si = answer_step;
+	return si->value;
+	//return _calc_value(sst,answer_step,ctx);
 }
 
 static float _get_bound(Tree *sst,PData answer_step,PData ctx){
-	//_Answer_step *si = answer_step;
-	//return si->bound;
-	return _calc_bound_1(sst,answer_step,ctx);
+	_Answer_step *si = answer_step;
+	return si->bound;
+	//return _calc_bound_3(sst,answer_step,ctx);
 }
 
 
