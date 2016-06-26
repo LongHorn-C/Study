@@ -1,5 +1,6 @@
 ﻿#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "heap.h"
 
 static int _parent(int i){
@@ -12,6 +13,22 @@ static int _left_child(int i){
 
 static int _right_child(int i){
 	return i*2+2;
+}
+
+
+static PData * _expand_array(PData * a,int len){
+	PData *new_a = malloc(sizeof(PData)*len*2);
+	memcpy(new_a,a,sizeof(PData)*len);
+	free(a);
+	return new_a;
+}
+
+static PData * _contract_array(PData * a,int len){
+	len /=2;
+	PData *new_a = malloc(sizeof(PData)*len);
+	memcpy(new_a,a,sizeof(PData)*len);
+	free(a);
+	return new_a;
 }
 
 
@@ -103,6 +120,12 @@ PData heap_extract_max(Heap *hp){
 		hp->on_track(otSet,0,hp->a[0],0,0);
 	}
 	(hp->size)--;
+	
+	//contract table
+	if (hp->len > _DEFAULT_SIZE && hp->size < hp->len/4){
+		hp->a = _contract_array(hp->a,hp->len);	
+		hp->len /= 2; 
+	} 
 	_max_heapify(hp,0);
 	return max;
 }
@@ -131,6 +154,11 @@ void max_heap_update_key(Heap *hp,int i){
 
 
 int max_heap_insert(Heap *hp,PData aItem){
+	if (hp->size == hp->len){
+		hp->a = _expand_array(hp->a,hp->len);
+		hp->len *= 2;
+	}
+	
 	(hp->size)++;
 	hp->a[hp->size-1] = aItem;
 	if (hp->on_track){
@@ -140,6 +168,17 @@ int max_heap_insert(Heap *hp,PData aItem){
 	max_heap_update_key(hp,hp->size -1);
 	return hp->size - 1;
 }
+
+int max_heap_delete(Heap *hp,int i){
+	int j =_parent(i);
+	while (i > 0){
+		_swap(hp,i,j);
+		i=j;
+		j= _parent(i);
+	}
+	heap_extract_max(hp);
+}
+
 
 
 Heap * newHeap(int n,CompareFunction fCompare){

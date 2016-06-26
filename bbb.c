@@ -1,9 +1,10 @@
 ﻿#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "bbb.h"
 #include "g.h"
-#include "common.h"
+#include "heap.h"
 
 
 int back_track_to_get_next(Tree *path,PData a_i,int ans_size,Bt_callbacks *cb,PData ctx){
@@ -62,6 +63,7 @@ typedef struct {
 	int pass;
 	float value;
 	float bound;
+	int i_in_q; // index in min_queue;
 	PData data;
 }_Node_data;
 
@@ -69,6 +71,7 @@ typedef struct {
 	TreeNode *best_solution_sofar;
 	//treenode best_bound_node;
 	int bigger_better;
+	Heap *min_queue;
 	PData data;
 }_Tree_data;
 
@@ -77,9 +80,9 @@ typedef struct {
 #define _better_than(r,a,b) ( (r) ? (a)>(b) : (a)<(b) )
 //#define _better_than(r,a,b) ( (r) ? ((a)>(b)?1:0) : ((a)<(b)?1:0) )
 
-/*
-//for debug
 
+//for debug
+/*
 typedef struct {
 	int i;
 	ListNode *edge_node;
@@ -99,6 +102,27 @@ static int _print_node(TreeNode *n,PData ctx){
 	printf("addr:%x, parent:%x, idx:%d, iBegin:%s, iEnd:%s, weigth:%f, bound:%f, pass=%d, value:%f \n"
 		,n,n->parent,as->i,g->v[e->iBegin].name,g->v[e->iEnd].name,e->weight,as->bound,nd->pass,as->value);
 }
+*/
+/*
+typedef struct {
+	int iPerson;
+	int iJob;
+	int value;
+	int bound;
+}_Answer_step;  //type of  AnswerList -> Node->data.
+
+static int _print_node(TreeNode *n,PData ctx){
+
+	_Node_data *nd = _nd_of(n);
+	if (!nd){
+		printf("root:%x\n",n);
+		return 0;
+	}
+	_Answer_step *as = nd->data;
+	printf("addr:%x, parent:%x,pass=%d,i_in_q:%d\n"
+		,n,n->parent,nd->pass,nd->i_in_q);
+}
+
 static int _print_sst(Tree *sst,PData ctx){
 	printf("\n***Begin print tree\n");
 	tree_foreach(sst->root,ctx,_print_node);
@@ -107,6 +131,10 @@ static int _print_sst(Tree *sst,PData ctx){
 */
 
 static int _kill_node(Tree *sst,TreeNode *node){
+	_Tree_data *td = _td_of(sst);
+	_Node_data *nd =  _nd_of(node);
+		if (nd->i_in_q != -1)
+			max_heap_delete(td->min_queue,nd->i_in_q);
 	while(node != sst->root && node->first_child ==NULL){
 		TreeNode *parent = node->parent;
 		tree_delete(node);
@@ -273,9 +301,51 @@ static int _check_bound(Tree *sst,PData new_sst_node_data,PData ctx){
 }
 */
 
+static int _big_compare_bound(PData a,PData b){
+	TreeNode *na = a;
+	TreeNode *nb = b;
+	_Node_data *da=_nd_of(na);
+	_Node_data *db=_nd_of(nb);
+
+	if (da->bound == db->bound)
+		return 0;
+	else
+		return da->bound > db->bound ? 1 : -1;
+
+}
+
+static int _small_compare_bound(PData a,PData b){
+	return -_big_compare_bound(a,b);
+}
+
+static int _on_track_tree_node(enum Op_type ot,int i,PData di,int j,PData dj){
+	TreeNode *tn_i = di;
+	_Node_data *nd_i = _nd_of(tn_i);
+	switch (ot){
+		case otSwap:
+			nd_i->i_in_q = i;
+			TreeNode *tn_j = dj;
+			_Node_data *nd_j = _nd_of(tn_j);
+			nd_j->i_in_q = j;
+			break;
+		case otSet:
+			nd_i->i_in_q = i;
+			break;
+		case otRemove:
+			nd_i->i_in_q = -1;
+			break;
+		case otInsert:
+			nd_i->i_in_q = i;
+			break;
+	}
+	return 0;
+}
+
+
+
+
 int branch_bound(Tree *sst,PData new_ans_step,int ans_size,Bb_callbacks *cb,int bigger_better,PData ctx){
 	_Tree_data *td = sst->data;
-	int c=0;
 	if (! td){
 		td = malloc(sizeof(_Tree_data));
 		td->bigger_better = bigger_better;
@@ -284,15 +354,21 @@ int branch_bound(Tree *sst,PData new_ans_step,int ans_size,Bb_callbacks *cb,int 
 	}
 	if (!sst->root)
 		sst->root = newTreeNode();
+
+	if (bigger_better)
+		td->min_queue = newHeap(_DEFAULT_SIZE,_big_compare_bound);
+	else
+		td->min_queue = newHeap(_DEFAULT_SIZE,_small_compare_bound);
+	td->min_queue->on_track = _on_track_tree_node;
 	sst->cursor = sst->root;//branch out root
 	_Node_data new_sst_node_data;
 	new_sst_node_data.data = new_ans_step;
+	new_sst_node_data.i_in_q =-1;
 	while (sst->cursor){
 		int pass12 = 0,pass2 = 0;
 		//begin to branch out cursor
 		int bFound = cb->get_first_child(sst,new_ans_step,ctx);
 		while (bFound){
-            c++;
 			int iPass = cb->pass(sst,new_ans_step,ctx);
 			if(iPass){
 				new_sst_node_data.bound = cb->get_bound(sst,new_ans_step,ctx);
@@ -306,34 +382,36 @@ int branch_bound(Tree *sst,PData new_ans_step,int ans_size,Bb_callbacks *cb,int 
 				if ( bb_check_bound(sst,new_sst_node_data.bound) ){
 					//update best bound.
 					_Node_data *nd = _malloc_sst_node_data(&new_sst_node_data,ans_size);
-					_td_of(sst)->best_solution_sofar = tree_append_child(sst->cursor,nd);
+					TreeNode *tn = tree_append_child(sst->cursor,nd);
+					//max_heap_insert(td->min_queue,tn);
+					_td_of(sst)->best_solution_sofar = tn;
 					pass2 ++;
 					pass12 ++;
 				}
 			}
 			else if ( iPass ==1){
 				_Node_data *nd = _malloc_sst_node_data(&new_sst_node_data,ans_size);
-				tree_append_child(sst->cursor,nd);
+				TreeNode *tn = tree_append_child(sst->cursor,nd);
+				max_heap_insert(td->min_queue,tn);
 				pass12 ++;
 			}
 
 			bFound = cb->get_next_sibling(sst,new_ans_step,ctx);
 		}
-		//_print_sst(sst,ctx);
-
+	//	_print_sst(sst,ctx);
 		//end of branch out cursor
 		if (pass2)
 			_prune_inferior_nodes(sst);
 		else if (pass12 ==0)
 			_kill_node(sst,sst->cursor);
-		
-
-		sst->cursor = _get_best_bound(sst);  //can be implemented by a priority queue.
+        
+        sst->cursor = heap_extract_max(td->min_queue);
 	}
 	/*printf("final sst print:\n");
 	_print_sst(sst,ctx);*/
 	int result= _check_optimal(sst);
 	sst->data = td->best_solution_sofar;
+	freeHeap(td->min_queue,0);
 	free(td);
 	return result;
 }
@@ -342,22 +420,6 @@ PData bb_get_answer_step(TreeNode *tn){
 	_Node_data *nd= tn->data;
 	return nd->data;
 }
-/*
-PData malloc_sst_root_node_data(Tree*sst,PData answer_step,int ans_step_size){
-	if(!sst->root)
-		sst->root = newTreeNode();
-	_Node_data *nd = malloc(sizeof(_Node_data));
-
-	PData new_ans_step = malloc(ans_step_size);
-	memcpy(new_ans_step,answer_step,ans_step_size);
-
-	nd->data = new_ans_step;
-	nd->value = 0;
-	nd->bound = 0;
-	nd->pass = 1;
-	sst->root->data = nd;
-	return nd;
-}*/
 
 static int _free_node_data(TreeNode *n,PData ctx){
 	_Node_data *nd = n->data;
